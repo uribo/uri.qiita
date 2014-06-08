@@ -1,0 +1,73 @@
+Rを使ったGitHub contribution graph「芝生」の可視化
+
+## 草生やしていますか？
+
+GitHubに作成したリポジトリに対して、コミットやissuesの作成などを行うとプロフィールページに表示されるcontribution↓
+
+![contributions-private.png](https://qiita-image-store.s3.amazonaws.com/0/19462/43207385-f3e4-1c96-b288-78802beee357.png "contributions-private.png")
+
+
+どこかの界隈ではこれを「草」と呼ぶみたいです（納得🌷）。個人的には、コミットなどの総称して「草を生やす」と言い、このcontribution graphを「**芝生**」と呼びたい。
+
+これをGitHub以外の場所でも表示させたい時には、javascriptモジュールの[Cal-HeatMap](http://kamisama.github.com/cal-heatmap/)（[kamisama::cal-heatmap@GitHub](https://github.com/kamisama/cal-heatmap)
+）を使うと楽。可視化に必要なデータは`json`, `csv`, `tsv`, `txt`に対応しています。
+
+## 問題
+
+1. プライベートリポジトリへのcontributionsが見えない
+1. データをどこから取ってくるか
+2. cal-heatmapが読み込める形式に変換
+
+### プライベートリポジトリへのcontributionsが見えない
+
+ログインしていると自分のcontribution graphはプライベートリポジトリへのcontributionsが表示されますが、他のユーザーからは見えません↓。プライベートリポジトリにばかり貢献している人だと、ほとんど草が生えていない状態になります。
+
+![contributions-public.png](https://qiita-image-store.s3.amazonaws.com/0/19462/c13b721f-8264-b62f-fc27-d6a5100654ac.png "contributions-public.png")
+
+どうせならプライベートリポジトリを含んだcontribution graphを表示させたいところです。
+
+### データをどこから取ってくるか
+
+GitHubから取得します。URLはprivateのcontributionsを含んだものになっています。`username`の場所はそれぞれ置換してください。
+
+URL: `https://github.com/users/{username}/contributions_calendar_data`
+
+### cal-heatmapが読み込める形式に変換 (with R)
+
+先ほどのURLをcal-heatmap.jsで参照しても表示されません。cal-heatmapが読み込める形式（unix time stamp）に変換する必要があります。
+
+変換には`R`と`jsonlite`および`httr`という２つのパッケージを使います。
+
+ref) [Calendar Heatmap with rCharts](http://rcharts.io/viewer/?7979341#.U5OimhZLeA8)
+
+```{r get-cal-heatmap-format-json.r}
+library(jsonlite)
+library(httr)
+ 
+data1 <- fromJSON("https://github.com/users/uribo/contributions_calendar_data")
+ 
+colnames(data1) <- c("Date", "Value")
+data2 <- transform(data1, Date = as.numeric(as.POSIXct(Date)))
+ 
+myjson <- toJSON(data2, pretty=TRUE)
+cat(myjson)
+ 
+write(myjson, "myjson.json")
+```
+
+https://gist.github.com/uribo/2b02830e809c91879578
+
+`myjson.json`というファイルが変換したファイルになります。これを読み込むように指定します。
+
+Enjoy!🚀
+
+## ちらしのうら
+
+もう少し賢い方法がきっとある...。
+
+## 参考
+
+* [Why are my contributions not showing up on my profile? · GitHub Help](https://help.github.com/articles/why-are-my-contributions-not-showing-up-on-my-profile)
+* [GitHubでいつYour Contributionに反映されるのか | tech-tec](http://tech-tec.com/archives/1011)
+* [cal-heatmap](https://github.com/kamisama/cal-heatmap)
+* [rChartsCalendar](https://github.com/ramnathv/rChartsCalendar)

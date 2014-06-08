@@ -8,3 +8,4 @@ Writed article were [here](http://qiita.com/uri).
 ## CONTENTS
 
 0. [これから研究を始める大学学部生や院生はDr.Elgを利用しよう](http://qiita.com/uri/items/8eb4324f4c09f15e4b5b) 140606
+0. [Rを使ったGitHub contribution graph「芝生」の可視化](http://qiita.com/uri/items/f62ae42af8c28a053ad7) 140608
