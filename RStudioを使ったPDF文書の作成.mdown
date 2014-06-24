@@ -1,0 +1,96 @@
+RStudioを使ったPDF文書の作成（for RStudio 0.98.932+）
+
+> Gistにて、今回使用したファイルを[公開しています](https://gist.github.com/uribo/508816037e36e91515b7)。参考にどうぞ。出力結果のPDFは[こちら](https://www.dropbox.com/s/vl7wlkc34bfjxv6/Make%20PDF%20used%20to%20RStudio.pdf)で確認できます。
+
+> ![output image.png](https://qiita-image-store.s3.amazonaws.com/0/19462/9f406e49-59c0-bcc3-3b2e-fbef2267b84f.png "output image.png")
+↑成果物🍺。綺麗なPDFが作成されました👍👍👍
+
+
+## 実行環境
+
+* OS: Mac OS X 10.9.3
+* R 3.1.0 Patched (2014-06-16 r65952) "Spring Dance"
+* RStudio 0.98.932
+* Mac TeX 2014
+
+日本語まわりのこと以外はMacでもWindowsでもほとんど違いがないのではないでしょうか...。
+
+
+## RStudioでファイルをPDFに変換する
+
+RStudioで作成した`.Rmd`ファイルはさくっと他形式のファイルに変換可能なことは[以前書きました](http://qiita.com/uri/items/0c3b3f918f79b3e3e6d4#2-2)。今回はどのプラットフォームでも表示が崩れることがないPDFでの出力を行います。必要なのはひと通りTeXの出力ができる環境です。
+
+メニューバーから　File -> New File -> R Markdown ... からDocumentを選択し、Default Output FormatのところをPDFにチェックしてOKとしてください（あとで変更することも可能です）。
+
+すると以下のようなテンプレートファイルが作成されます。
+
+```{r}
+---
+title: "Untitled"
+author: "author"
+date: "June 24, 2014"
+output:
+  pdf_document:
+    toc: true
+    fontsize: 12pt
+    highlight: tango
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax 
+for authoring HTML, PDF, and MS Word documents. For more details on 
+using R Markdown see <http://rmarkdown.rstudio.com>.
+```
+
+ハイフンで挟まれた部分がheaderとなり、ここで全体の設定（出力形式や目次の有無、フォントサイズ、Rスクリプトのハイライトの見た目などの変更）をしています（後述 -> <a href="#2-3">LaTeX オプション</a>）。ハイフン以下の部分が出力される本文および実行するRスクリプトとなります。
+
+### 図の名前、種類と保存先
+
+保存される図の名前、種類、保存先はchunk optionにて設定が可能です。
+
+作図した図はデフォルトでは`.pdf`として保存されます。TeXはPDFファイルの埋め込みに対応しているので、綺麗な図をそのまま表示させることが可能です。図の保存先は`ファイル名_files`というフォルダに保存されます。
+
+これらを変更したい場合にはchunk optionにて、`chunk name`、`dev`と`fig.pagh`でそれぞれ指定します。
+
+`{r fig1, dev='png', fig.path='figure/'}`
+
+とした場合、figureフォルダ内に`fig1.png`というファイルが生成されます。
+
+## LaTeX オプション
+
+LaTeXのプリアンブルで行うようなドキュメント全体の指定はheader部分で行います。こちらについては[公式ページ](http://rmarkdown.rstudio.com/pdf_document_format.html#latex-options)の説明が詳しいです。
+
+## 日本語の問題
+
+さてさて便利な`Rmd`から`PDF`への変換機能ですが、日本語を含む文書あるいは図が上手く表示されない、ということがあります。そんなわけで**あれこれ格闘してみた結果**です。
+
+### 日本語でおｋな文書
+
+「[RStudio(Windows)でSweave(.Rnw)を使って一発でpdf作りたい - My Life as a Mock Quant](http://d.hatena.ne.jp/teramonagi/20140203/1391429752)」で書かれている通り、lualatexでのPDF作成を行います。latex_engineに`lualatex`とし、`.tex`ファイルのほうで`luatexja`パッケージの読み込み指定が必要となるので、[pandoc templates](https://github.com/jgm/pandoc-templates/blob/master/default.latex)に`\usepackage{luatexja}`を加える。たぶんこれで大丈夫なはず...。どうでしょうか？
+
+ref) [RStudio(Windows)でSweave(.Rnw)を使って一発でpdf作りたい - My Life as a Mock Quant](http://d.hatena.ne.jp/teramonagi/20140203/1391429752)
+
+
+### 日本語でおｋな図
+
+自分の環境だけかもしれませんが、次のようにすると問題なく表示できます。まずchunk optionで`warning=FALSE`とし（エラーメッセージの非表示）、`dev='cairo_pdf'`とします。ついで作図、となりますが重要なのは作図デバイスの呼び出し前に**par(family="")でフォントファミリーを指定**することです。`Osaka`なり`Hiragino`なり、お好みのフォントファミリーに変更してください。
+
+ref) [グラフの描き方](http://oku.edu.mie-u.ac.jp/~okumura/stat/graphs.html)
+
+```{r}
+```{r fig1, echo=FALSE, fig.cap="にほんご", warning=FALSE, dev='cairo_pdf'}
+par(family="Osaka")
+plot(cars, main=c("日本語でおｋ"), xlab="にほんご")
+```
+
+### Windowsでは？
+
+[@takeshou](http://d.hatena.ne.jp/takeshou/)さんによるメモが参考になりそうです。
+
+ref) [RStudioで日本語PDF - ぼやかないつもりのメモ](http://d.hatena.ne.jp/takeshou/20140624/1403579987)
+
+
+## I wished it!
+
+本が出たみたいですね。...欲しい。
+
+* [ドキュメント・プレゼンテーション生成 / 金 明哲　編 高橋 康介　著 | 共立出版](http://www.kyoritsu-pub.co.jp/bookdetail/9784320123724)
