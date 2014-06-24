@@ -1,0 +1,109 @@
+【まとめ】RMarkdown2で何が変わったのか？
+
+もう**全てRMarkdownでいいんじゃないかな**、最近そんな気がします。
+
+先日、[RStudio]()がv0.98.932に更新されて、公式ブログにてRMarkdown2への対応が[取り上げられて](http://blog.rstudio.org/2014/06/18/r-markdown-v2/)いましたね。旧RMarkdownから新しいRMarkdownで何が変わったのか、という点を個人的にまとめてみます。勉強不足（特にRの中身的な話）なところはコメントなどで指摘してくださると助かります。
+
+細かいところは**習うより慣れろ**の精神でとにかく使ってみる、[公式ページ](http://rmarkdown.rstudio.com/)のマニュアルを読むなどしてください。最後にあげた参考ページもとても良いです。
+
+## RMarkdownとは？
+
+その名の通り、MarkdownでR言語のスクリプトの実行とコメントの記述ができる拡張子です。Rのスクリプトや出力結果、プロットした図とコメントを一括して記述できることに利点があると思います。
+
+また、RStudioの機能を使えば、簡単に`.Rmd`から`.html`, `.md`への変換が可能です。なお、ここではRStudioの機能を使ったRMarkdownの話に限定しています。
+
+ちなみに、RMarkdownで`.pdf`や`.docx`に変換する際には別途pandocをインストールしている必要があります。
+
+## v1からv2での大きな変更点
+
+1. `.Rprofile`の設定は読み込まれず、使用するパッケージや設定のための関数は`.Rmd`内で記述する必要がある。
+1.  従来の`.Rmd`ファイルに加え（通常の書類とプレゼンテーション形式）、Shiny形式のファイルとテンプレートファイルから作成できるようになった。
+    * `.Rmd`ファイルを新規作成したときにタイトルと著者名を任意で書けるようになった。
+    * プレゼンテーション形式としてBeamerだけでなくHTML5に対応したiosslide、reveal.jsが選べるようになった。
+1. knitしたときの出力結果として<del>`.md`が排除され</del>、`.html`, `.pdf`(LaTeX/PDF), （みんなだいすき（棒））`.docx`の3ファイルから選べるようになった。
+    * `.html`での出力形式には通常のものに加え、
+1. `.html`で出力したときに保存される図のパスの初期値が`figure/`以下でなくなった。
+
+### [公式ページ](http://rmarkdown.rstudio.com/authoring_migrating_from_v1.html)で書かれていること
+    
+* 上付き文字の構文がちょっと変わった（`superscript^2^)`）
+* LaTeXでのワードプレススタイルの数式構文はサポートされなくなった
+* HTMLの構文内にあるmarkdownも表示される
+* knitrキャッシュに関して... `inputfile_cache`のようにキャッシュファイルがそれぞれ作成するようにしなければいけなくなった。
+
+### headerの変更
+
+`.Rmd`ファイルを新規作成するとこんな感じ。こちらのheaderのoutput以下をいじくることでいろいろと変更ができます。
+
+```{r}
+---
+title: "Untitled"
+author: "author name"
+output: html_document
+---
+```
+
+ちなみに従来はこんなんでした。
+
+```{r}
+Untitled
+===================================
+```
+
+### output: html_documentの設定
+
+テーマ（CSS）やハイライトのスタイルを細かく指定できます。テーマを指定することで`.html`の見た目（CSS）が変更されます。使用可能なテーマは`default`, `cerulean`, `journal`, `flatly`, `readable`, `spacelab`, `united`, `cosmo`があります。
+
+```{r}
+---
+title: "Untitled"
+output: 
+  html_document:
+    theme: united
+    highlight: tango
+    toc: true
+      toc_depth: 2
+---
+```
+
+それぞれのテーマで表示するとこんな感じになります。英語だとばっちりきまりますね、日本語の場合は、次の俺俺CSSにしたほうが無難そうです...。
+
+![rmarkdown-theme.png](https://qiita-image-store.s3.amazonaws.com/0/19462/899876d9-1355-62ca-6599-2bb21a691bb5.png "rmarkdown-theme.png")
+
+
+俺俺CSSで表示させたい場合（styles.cssの読み込み）
+
+```{r}
+title: "Untitled"
+output:
+  html_document:
+    theme: null
+    highlight: null
+    css: styles.css
+```
+
+細かいことは公式のマニュアル嫁。...時間があればまとめたいです。
+
+
+## その他
+
+### knitr開発者のYihui Xieさんによる[RMarkdown2の紹介](http://vimeo.com/94181521)
+
+
+
+### 従来のRMarkdownがヨカッタヨ！という場合
+
+コメントアウトで対応できる模様。
+
+```{r}
+<!-- rmarkdown v1 -->
+```
+
+## 参考
+
+* [Using R Markdown – RStudio Support](https://support.rstudio.com/hc/en-us/articles/200552086-Using-R-Markdown)
+* [R Markdown — Dynamic Documents for R](http://rmarkdown.rstudio.com/)
+* [R Markdown v2](http://blog.rstudio.org/2014/06/18/r-markdown-v2/)
+* [RStudioでKnit HTML](http://plaza.umin.ac.jp/~takeshou/R/RmdToHTML.html)
+* [rmarkdownパッケージで楽々ドキュメント生成](http://kohske.github.io/R/rmarkdown/)
+* [R markdown(knitr)パッケージのchunk optionまとめ - My Life as a Mock Quant](http://d.hatena.ne.jp/teramonagi/20130615/1371303616)
