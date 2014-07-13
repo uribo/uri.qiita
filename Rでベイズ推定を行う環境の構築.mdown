@@ -1,0 +1,76 @@
+Rでベイズ推定を行う環境の構築
+
+先日の[BUGS/stan勉強会 #3](http://atnd.org/events/52769)に参加（聴講のみ）したのでそのリポート、というわけではなく環境の整備をしたという記事。...形から入りたい性格だから（小声）。詳しいことはまた勉強する or ブログ記事を読む。
+
+（致死させない程度の） **マサカリ歓迎**
+
+主催の@TeitoNakagawa さんからのメッセージ。
+
+<blockquote class="twitter-tweet" lang="en"><p>なお、参加される方へ、本日は初心者セッション等はございませんので過去資料や関連するblog記事等に目を通しておくこと、RStanのインストールをお勧めします。 <a href="https://twitter.com/hashtag/TokyoBUGS?src=hash">#TokyoBUGS</a></p>&mdash; Teito Nakagawa (@TeitoNakagawa) <a href="https://twitter.com/TeitoNakagawa/statuses/487750325093167104">July 12, 2014</a></blockquote>
+<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+過去の勉強会
+
+* [BUGS/stan勉強会 #1](http://atnd.org/events/43260)
+* [BUGS/Stan勉強会 #2](http://atnd.org/events/44361/)
+
+入門セッションは過去のものを参考に。
+
+## BUGS/Stanとは... おまけにJAGS
+
+> BUGS/Stanとは何ぞやということを説明しておくとベイズ推定による柔軟なモデリングを実現するためのDSL言語 [第1回BUGS/Stan勉強会を開催しました - Analyze IT.](http://d.hatena.ne.jp/EulerDijkstra/20130930/1380547174)
+
+とのこと。
+
+**MCMC**（マルコフ連鎖モンテカルロ法: Markov chain Monte Carlo methods） を用いたベイズ推定という枠組み、は共通しているけど、[BUGS](http://www.mrc-bsu.cam.ac.uk/software/bugs/), [Stan](http://mc-stan.org/), [JAGS](http://mcmc-jags.sourceforge.net)はそれぞれ別物。用途に応じて使い分けるのが良さげ↓（参考）。
+
+<iframe src="//www.slideshare.net/slideshow/embed_code/26159695?startSlide=22" width="512" height="421" frameborder="0" marginwidth="0" marginheight="0" scrolling="no" style="border:1px solid #CCC; border-width:1px 1px 0; margin-bottom:5px; max-width: 100%;" allowfullscreen> </iframe> <div style="margin-bottom:5px"> <strong> <a href="https://www.slideshare.net/berobero11/bugs-26159695" title="BUGSを使うメリット" target="_blank">BUGSを使うメリット</a> </strong> from <strong><a href="http://www.slideshare.net/berobero11" target="_blank">berobero11</a></strong> </div>
+
+### 間違っているかもしれないまとめ
+
+**BUGS** をマルチプラットフォームで使えるように改良してあるのが **JAGS** で姉妹のようなもの。 **Stan**は、BUGSを参考にしつつも処理の方法が前２つとは異なっていて、高速。ちなみにBUGSとJAGSは略称で、Stanの由来はStanislaw Ulamにちなんでいるとか。
+
+（きっとほかにもある）
+
+## BUGS (WinBUGS)
+
+http://www.mrc-bsu.cam.ac.uk/software/bugs/
+
+BUGSというのはBayesian inference Using Gibbs Samplingの略で、その名の通りギブズサンプラーによるベイズ推定を行う
+
+Macにインストールする方法（[Mac OS X上で、WinBUGS+R2WinBUGSを使用する](http://www001.upp.so-net.ne.jp/ito-hi/stat/winbugs.html)など）もあるけど面倒なのでやめた。
+
+## JAGS (rjags)
+
+http://mcmc-jags.sourceforge.net
+
+JAGSはJust Another Gibbs Samplerの略。ギブス抽出法を用いたベイズ階層モデルを実装できる。`rjags`パッケージはR上でJAGSを実行するインターフェイス。
+
+### 手順
+
+* `JAGS`: [sourceforge](http://sourceforge.net/projects/mcmc-jags/files/) -> JAGS 3.3.0
+* `rjags`: 20140712現在、最新のバージョン（3.13）はmavericksに対応していない。[Mavericksでのrjags：Taglibro de H：So-netブログ](http://ito-hi.blog.so-net.ne.jp/2014-06-28)にあるとおり、Snow Leopard用のバイナリ版をインストール
+
+## Stan (rstan)
+
+http://mc-stan.org/index.html
+
+真打ちというか導入が一番楽だった。C++で処理を行うため高速化されているというのが特徴。開発が盛んでマニュアルや実例もまとめてあるので大変良い印象。
+
+### インターフェイス
+
+* `CmdStan` -> コマンドラインからStanを操作
+* `RStan` -> R上でStanプログラムを実行する
+    * こちらを使う
+* `PyStan` -> PythonでStan
+* 開発中... -> MATLAB, **Julia**!!, Stata
+
+### 手順
+
+https://github.com/stan-dev/rstan/wiki/RStan-Getting-Started
+
+ここに書いてある手順に従えば良い。MacではR、RStudio、Xcodeを適宜用意する必要がある。自分の環境ではRcppパッケージの再インストールが必要だった。
+
+## まとめ
+
+[BUGS/stan勉強会 #3](http://atnd.org/events/52769)でもStanを使った発表が多かったし、速さは正義なのでRStanで勉強進めていく。
