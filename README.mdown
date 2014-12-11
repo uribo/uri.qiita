@@ -11,3 +11,9 @@ Writed article were [here](http://qiita.com/uri).
 0. [Rを使ったGitHub contribution graph「芝生」の可視化](http://qiita.com/uri/items/f62ae42af8c28a053ad7) 140608
 0. [【まとめ】RMarkdown2で何が変わったのか？](http://qiita.com/uri/items/0c3b3f918f79b3e3e6d4)
 0. [RStudioを使ったPDF文書の作成（for RStudio 0.98.932+）](http://qiita.com/uri/items/d9e50e8e5a37217a3f5d) 140624
+0. [Rでベイズ推定を行う環境の構築](http://qiita.com/uri/items/2fd051c18a148f7d2a35) 140713
+0. [連番になっている複数のファイルを読み込む](http://qiita.com/uri/items/e162302ce8a38b009660) 140722
+0. [このRパッケージがすごい2014](http://qiita.com/uri/items/ce711ee6da76a1e11ca5) 141201
+0. [Rプログラミングのための第一歩（未完）](http://qiita.com/uri/items/1245441ab179c6ee76f9) 141203
+0. [rvestでDribbbleに投稿されたshotのカラーパレットを作る](http://qiita.com/uri/items/4fd3ee95ab40e66fe7a4) 141207
+0. [羽鳥教入信のすゝめ](http://qiita.com/uri/items/a66b682507181baa0d50) 141209
