@@ -3,7 +3,7 @@ qiita
 
 My [Qiita](https://qiita.com/) article backup.
 
-Writed article were [here](http://qiita.com/uri).
+Writed articles were [here](http://qiita.com/uri).
 
 ## CONTENTS
 
@@ -17,3 +17,5 @@ Writed article were [here](http://qiita.com/uri).
 0. [Rプログラミングのための第一歩（未完）](http://qiita.com/uri/items/1245441ab179c6ee76f9) 141203
 0. [rvestでDribbbleに投稿されたshotのカラーパレットを作る](http://qiita.com/uri/items/4fd3ee95ab40e66fe7a4) 141207
 0. [羽鳥教入信のすゝめ](http://qiita.com/uri/items/a66b682507181baa0d50) 141209
+0. [いつものプロットに流行色を取り入れるのはいかが？ ](http://qiita.com/uri/items/32a708d3e5395db604b6) 141219
+0. [一歩進んだRとの付き合い方](http://qiita.com/uri/items/83804c9eb4a3cb9c6811) 141222
