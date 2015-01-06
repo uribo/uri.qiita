@@ -7,6 +7,12 @@ Writed articles were [here](http://qiita.com/uri).
 
 ## CONTENTS
 
+### 2015
+
+0. [進捗を評価する関数を作った #進捗を支える技術](http://qiita.com/uri/items/d470ba8d68bf9dabebd3) 150102
+
+### 2014
+
 0. [これから研究を始める大学学部生や院生はDr.Elgを利用しよう](http://qiita.com/uri/items/8eb4324f4c09f15e4b5b) 140606
 0. [Rを使ったGitHub contribution graph「芝生」の可視化](http://qiita.com/uri/items/f62ae42af8c28a053ad7) 140608
 0. [【まとめ】RMarkdown2で何が変わったのか？](http://qiita.com/uri/items/0c3b3f918f79b3e3e6d4)
