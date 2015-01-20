@@ -10,6 +10,7 @@ Writed articles were [here](http://qiita.com/uri).
 ### 2015
 
 0. [進捗を評価する関数を作った #進捗を支える技術](http://qiita.com/uri/items/d470ba8d68bf9dabebd3) 150102
+0. [ファイル中で指定しているカラーコードを把握する #進捗を支える技術](http://qiita.com/uri/items/54b2f055eee3298b2c3d) 150119
 
 ### 2014
 
