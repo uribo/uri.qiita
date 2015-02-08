@@ -14,6 +14,8 @@ Writed articles were [here](http://qiita.com/uri).
 0. [インストールしたRパッケージのあれこれ - Qiita](http://qiita.com/uri/items/8fa7e194013977899f86) 150122
 0. [Macで使えるテキストエディタアプリに隠された機能 - Qiita](http://qiita.com/uri/items/883bd88875b6cb8e2bdb) 150123
 0. [RStudio 0.99の変更点と最近のRコードの書き方 - Qiita](http://qiita.com/uri/items/a60f28d437c773010daf) 150128
+0. [R - ソースコードの中でも絵文字を使う :rocket: #進捗を支える技術 - Qiita](http://qiita.com/uri/items/e27adda87bb0c32f18ff) 150207
+
 
 ### 2014
 
