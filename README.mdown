@@ -17,6 +17,9 @@ Writed articles were [here](http://qiita.com/uri).
 0. [R - ソースコードの中でも絵文字を使う :rocket: #進捗を支える技術 - Qiita](http://qiita.com/uri/items/e27adda87bb0c32f18ff) 150207
 0. [Rで絵文字（sushi <- c(:sushi:)への道） - Qiita](http://qiita.com/uri/items/bcb702faef242bdd9820) 150214
 0. [Rを使ったスクリーンキャプチャ: webshotパッケージの応用 - Qiita](http://qiita.com/uri/items/93c03e4be8b61957337e) 150222
+0. [LaTeX文書中に絵文字的なもの（Font-Awesome）を取り入れる - Qiita](http://qiita.com/uri/items/00afdd95e68d47fd917b) 150328
+0. [R言語を扱う際のtips by Rstatistics.net - Qiita](http://qiita.com/uri/items/19ad62594527a67d6783) 150402
+
 
 ### 2014
 
