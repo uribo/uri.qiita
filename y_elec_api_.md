@@ -53,15 +53,12 @@ list.table(url, Area)
 # 1        1        1        1        1        1
 ```
 
-各電力会社のデータはurl[[i]]に格納されており、次はこのリストから`list.mapv`関数を使って値を取り出す。例によって、数値が文字列になっているので`transform`関数で型変換。使用量 / 供給量の割合の`usage.pct`という列を新たに追加して、`res`というデータフレームを作成。
+各電力会社のデータはurl[[i]]に格納されており、次はこのリストから`list.mapv`関数を使って値を取り出す。~~例によって、数値が文字列になっているので`transform`関数で型変換~~。data.frame関数で結合し、使用量 / 供給量の割合の`usage.pct`という列を新たに追加して、`res`というデータフレームを作成。
 
 ```r
-cbind(area,
+data.frame(area,
       usage    = list.mapv(url, Usage$`$`, use.names = FALSE), 
       capacity = list.mapv(url, Capacity$`$`, use.names = FALSE)) %>% 
-  as.data.frame() %>% 
-  transform(usage    = as.numeric(as.character(usage)),
-            capacity = as.numeric(as.character(capacity))) %>% 
   dplyr::mutate(usage.pct = usage / capacity * 100) -> res
 ```
 

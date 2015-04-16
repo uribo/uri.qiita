@@ -45,6 +45,17 @@ head(dat)
 ### 以下省略
 ```
 
+### readrパッケージを使う
+
+150411追記。
+
+新しくCRANに追加された[`readr`]()パッケージを使うのもひとつの手段。
+
+```r
+library("readr")
+read_csv("https://raw.githubusercontent.com/uribo/mydata/master/route246.csv")
+```
+
 ## webページのテーブルからデータを取得する
 
 ### XML::readHTMLTableを使う方法
