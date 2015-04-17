@@ -19,6 +19,9 @@ Writed articles were [here](http://qiita.com/uri).
 0. [Rを使ったスクリーンキャプチャ: webshotパッケージの応用 - Qiita](http://qiita.com/uri/items/93c03e4be8b61957337e) 150222
 0. [LaTeX文書中に絵文字的なもの（Font-Awesome）を取り入れる - Qiita](http://qiita.com/uri/items/00afdd95e68d47fd917b) 150328
 0. [R言語を扱う際のtips by Rstatistics.net - Qiita](http://qiita.com/uri/items/19ad62594527a67d6783) 150402
+0. [RでAPIデータを扱うときはrlistを使うとストレスフリー - Qiita](http://qiita.com/uri/items/acd75391287014ca515f) 150404
+0. [R - webページやクラウド上にあるファイルを読み込みまくる ~ 基礎編 - Qiita](http://qiita.com/uri/items/19159c7ff3f771cfa761) 150406
+0. [R - webページやクラウド上にあるファイルを読み込みまくる ~ 応用編 - Qiita](http://qiita.com/uri/items/2e108d6fcbd80ef58444) 150406
 
 
 ### 2014
