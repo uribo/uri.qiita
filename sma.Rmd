@@ -1,0 +1,249 @@
+---
+title: "II型回帰をRでやってみる #rstatsj"
+author: "Shinya Uryu"
+date: "2015年4月26日"
+output: html_document
+---
+
+```{r}
+# theme_set(theme_classic(base_size = 24, base_family = "Helvetica"))
+```
+
+たまには真面目なめも。より詳しくは最後にあげる文献やWebページを見てください。
+
+ある人の身長と体重というようなデータを得たときに、これら**２変量の間に関係があるのか**ということに興味があるとします。２つの変数間の解析では、回帰分析をやればいいんでしょ、ふんふん🎵などと単純に考えていると痛い目にあうことがあります。一口に線形回帰といっても、解析の目的に応じてとるべき手法が変わってくるためです。
+
+まず分析の目的が、**ある変数から別の変数を予測**することにあるのか、今回のように**片方の変数ともう片方の変数との関係**を知りたいのかが大きな違いとなります。これらはの分析手法は観測データの性質により、それぞれ線形回帰の$I$型、$II$型の模型に分けられます。
+
+## 線形回帰におけるI型回帰とII型回帰
+
+### I型の回帰
+
+２変数（説明変数$X$と目的変数$Y$）の関係を調べる際、通常見かける回帰の方法です。$I$型の回帰ではつぎの４つの仮定から成り立っています（Skall & Rohlf (藤井訳) 1983）。
+
+1. 説明変数$x$は誤差を伴わない（$x$は固定されている）
+2. ある与えられた$X$の値に対する変数Yの期待値は、一次関数 $\mu y = \alpha x  + \beta$で表される
+3. 変数Xのある与えられた値$x_i$に対して、$Y$は独立に、かつ正規分布する
+4. 変数は等分散する
+
+例のような生物のデータでは、これらの仮定を満たすことができていません。まず、測定した身長と体重において、説明変数を身長、目的変数に体重を考えたとき、説明変数である身長の測定誤差を無視することはできない（身長と同様、生活習慣や家庭環境というような個体差が生じる）ため、はじめの「説明変数$X$は誤差を伴わない」が成り立ちません。加えてそもそも論として、身長が体重の直接的な原因となるわけではない、という問題があります。これらの関係は、身長（原因）による体重（効果）への影響ではなく、単純な変数間の関係を示すのが適当です。
+
+### II型の回帰
+
+２変量間の関係をみたい場合には、相関を調べるのが一つの方法ですが、時としてこれらの**関数的な関係**を知りたい場合があります。$I$型回帰が成立しない状況においては、$II$型の回帰が有効な分析手法となります。説明変数Xの誤差を考慮しない$I$型回帰に対し、**$II$型回帰では目的変数$Y$, 説明変数$X$どちらの変数の誤差も考慮**します。例でいえば、身長も体重も測定したときの個体に依存した誤差があるだろう、と仮定するわけです（考えみれば当然？）。
+
+## 例題: プロ野球選手（投手）の身長と体重の関係
+
+身長と体重のデータが手元になかったので「[プロ野球データFreak](http://baseball-data.com)」から投手の身長と体重（元データはプロ野球選手名鑑とかでしょうか）をスクレイピングしてとってきます。身長ランキングの上位100人分の選手名、所属チーム、そして身長と体重のデータです（細かいことなんかは餅屋に任せたい。セイバーメトリクスとか知らないし）。
+
+```{r}
+# 使用パッケージ（II型回帰のためのパッケージはあとで）
+library(rvest)
+library(dplyr)
+library(tidyr)
+library(broom)
+```
+
+```{r}
+url <- "http://baseball-data.com/ranking-height/all/p.html"
+url %>% html() %>% 
+  html_nodes("table") %>% .[[1]] %>% 
+  html_table() %>%
+  dplyr::rename(name   = 選手名,
+         team   = チーム,
+         height = 身長,
+         weight = 体重) %>% 
+  select(name, team, height, weight) %>% 
+  mutate_each(funs(extract_numeric), height, weight) -> df
+```
+
+```{r}
+str(df)
+# 'data.frame':	100 obs. of  4 variables:
+#  $ name  : chr  "ミコライオ" "オンドルセク" "クロッタ" "ポレダ" ...
+#  $ team  : chr  "楽天" "ヤクルト" "日本ハム" "巨人" ...
+#  $ height: num  205 203 201 198 198 198 198 196 196 196 ...
+#  $ weight: num  115 104 107 109 105 88 121 100 100 104 ...
+summary(df)
+#      name               team               height          weight      
+#  Length:100         Length:100         Min.   :186.0   Min.   : 72.00  
+#  Class :character   Class :character   1st Qu.:187.0   1st Qu.: 85.00  
+#  Mode  :character   Mode  :character   Median :188.0   Median : 90.00  
+#                                        Mean   :189.5   Mean   : 91.43  
+#                                        3rd Qu.:191.0   3rd Qu.: 95.25  
+#                                        Max.   :205.0   Max.   :121.00  
+```
+
+高身長の上位は助っ人選手が多いですね。200cm以上の選手は以外と少ない...。
+
+なにはともあれ、まずはデータを散布図で示すところからはじめます。
+
+```{r}
+df %>% ggplot(aes(height, weight)) + 
+  geom_point(size = 4) -> p
+p
+# df %>% ggvis(aes(height, weight)) +
+#   layer_points() %>% 
+#   scale_numeric("x", trans = "log") %>%  scale_numeric("y", trans = "log")
+```
+
+![](Figure/Rplot150427.png)
+
+なにやら相関関係がありそうなのでこれらの２変数の相関係数を見てみます。
+
+```{r, eval=FALSE}
+df %$% cor.test(height, weight) %>% tidy() %>% kable(format = "html")
+```
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:right;"> estimate </th>
+   <th style="text-align:right;"> statistic </th>
+   <th style="text-align:right;"> p.value </th>
+   <th style="text-align:right;"> parameter </th>
+   <th style="text-align:right;"> conf.low </th>
+   <th style="text-align:right;"> conf.high </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:right;"> 0.6351581 </td>
+   <td style="text-align:right;"> 8.140716 </td>
+   <td style="text-align:right;"> 0 </td>
+   <td style="text-align:right;"> 98 </td>
+   <td style="text-align:right;"> 0.5012776 </td>
+   <td style="text-align:right;"> 0.7393388 </td>
+  </tr>
+</tbody>
+</table>
+
+~~ここちょっと消えてますね... p.valueという値があったんですが...。~~というわけで、相関係数*r* = 0.6351581（*P* = 0.000000000001269651）が得られました。
+
+## 最小二乗法
+
+単回帰での回帰直線を引く方法である最小二乗法のおさらいです。
+
+最小二乗法は各データの残差の二乗和を最小にすることで求まりますが、ここの残差（誤差の推定量）は$I$型回帰の場合、Y$Y$まり垂直のみの誤差となります。というのも、$I$型回帰は説明変数であるXは固定されていることを仮定しているためです。例題での最小二乗法により求めた傾きと切片はつぎのようになります。
+
+```{r, eval=FALSE}
+df %$% lm("weight ~ height", data = .) %>% tidy() %>% kable(format = "html")
+```
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;"> term </th>
+   <th style="text-align:right;"> estimate </th>
+   <th style="text-align:right;"> std.error </th>
+   <th style="text-align:right;"> statistic </th>
+   <th style="text-align:right;"> p.value </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> (Intercept) </td>
+   <td style="text-align:right;"> -178.479388 </td>
+   <td style="text-align:right;"> 33.1625799 </td>
+   <td style="text-align:right;"> -5.381951 </td>
+   <td style="text-align:right;"> 0.0000005 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> height </td>
+   <td style="text-align:right;"> 1.424474 </td>
+   <td style="text-align:right;"> 0.1749814 </td>
+   <td style="text-align:right;"> 8.140716 </td>
+   <td style="text-align:right;"> 0.0000000 </td>
+  </tr>
+</tbody>
+</table>
+
+では$II$型回帰での最小二乗法ではどうなるかみてみましょう。Rでは$II$型回帰を実施する関数を含んだパッケージが`lmodel2`と`smatr`の２つがあります。両パッケージも$II$型回帰のM`MA`, `MAに`対応しています（今回はSMAを採用）。今回はそれを確認することも含めて両パッケージで実施します。
+
+```{r}
+library(lmodel2)
+library(smatr)
+```
+
+```{r, eval=FALSE}
+df %>% lmodel2("weight ~ height", data = .) -> res.model2
+res.model2$regression.results[3, ] %>% kable(format = "html")
+```
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:left;"> Method </th>
+   <th style="text-align:right;"> Intercept </th>
+   <th style="text-align:right;"> Slope </th>
+   <th style="text-align:right;"> Angle (degrees) </th>
+   <th style="text-align:left;"> P-perm (1-tailed) </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 3 </td>
+   <td style="text-align:left;"> SMA </td>
+   <td style="text-align:right;"> -333.5184 </td>
+   <td style="text-align:right;"> 2.242708 </td>
+   <td style="text-align:right;"> 65.96841 </td>
+   <td style="text-align:left;"> NA </td>
+  </tr>
+</tbody>
+</table>
+
+```{r, eval = FALSE}
+df %>% sma("weight ~ height", data = .) -> res.sma
+res.sma %$% as.data.frame(coef) %>% kable(format = "html")
+```
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:right;"> coef.SMA. </th>
+   <th style="text-align:right;"> lower.limit </th>
+   <th style="text-align:right;"> upper.limit </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> elevation </td>
+   <td style="text-align:right;"> -333.518369 </td>
+   <td style="text-align:right;"> -399.331571 </td>
+   <td style="text-align:right;"> -267.705167 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> slope </td>
+   <td style="text-align:right;"> 2.242708 </td>
+   <td style="text-align:right;"> 1.922187 </td>
+   <td style="text-align:right;"> 2.616677 </td>
+  </tr>
+</tbody>
+</table>
+
+$II$型回帰では$X,Y$どちらの誤差も扱うため、$I$型回帰よりも傾きがきつくなる傾向になります。
+
+最後に$I$型と$II$型による直線回帰引いてみて比較します。赤色の線が$I$型、青色の線が$II$型回帰です。
+
+```{r weight_height_regression}
+log_data <- res.sma$log
+a <- res.sma$coef[[1]][1, 1]; b <- res.sma$coef[[1]][2, 1]
+p + stat_smooth(method = "lm", se = FALSE, colour = "tomato") + # OLS
+    stat_function(fun = function(x) {a + x * b}, colour = "skyblue") # SMA
+# ref) http://stackoverflow.com/questions/5177846/equivalent-of-curve-for-ggplot
+```
+
+今回は、生物のデータでありがちな$X, Y$どちらの変数にも誤差があるときの回帰分析の方法について扱いました。実際は、$II$型回帰の種類もさまざまで、データの性質や用途に応じて使い分けるのが良いです（Legendre 2013）。また、$II$型回帰における処理や種の違い（傾き）を比較する方法についてはまた余力があるときに書きたいと思います。
+
+さいごに、Warton (2006)では、既存の回帰分析の問題を取り上げ、$II$型回帰の分析手法について説明しています。`lmodel2`のvignettesとして提供されているLegendre (2013)では、$II$型回帰の応用例と使い分けの基準が書かれています。もっと勉強しておかないと...
+
+## 参考
+
+* Warton, D. I., Wright, I. J., Falster, D. S., & Westoby, M. (2006). Bivariate line-fitting methods for allometry. Biological Reviews, 81(02), 259. doi:10.1017/S1464793106007007 
+* Warton, D. I., R. A. Duursma, D. S. Falster, and S. Taskinen. 2012. smatr 3- an R package for estimation and inference about allometric lines. Methods in Ecology and Evolution 3:257–259.* Sokal, R. R. & Rohlf, F. J. 藤井宏一訳 (1983). 生物統計学. 共立出版
+* Legendre, L. (2013). Model II Regression User Guide
+* 粕谷英一 (1998). 生物学を学ぶ人のための統計のはなし 君にも出せる有意差. 文一総合出版
+* [第一回広島ベイズ塾・最小二乗法](http://www.slideshare.net/TakashiYamane1/ss-25742604)
+* [飯島の雑記帳 - 統計解析ログ/Ⅱ型の回帰分析](http://www7.atwiki.jp/hayatoiijima/pages/23.html)
