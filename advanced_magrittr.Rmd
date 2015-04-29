@@ -1,0 +1,120 @@
+---
+title: "pipe中毒になったら、更にわがままな人間になった"
+author: "Shinya Uryu"
+date: "2015年4月28日"
+output: html_document
+---
+
+pipeR三銃士に（自称）弟子入りしてから半年以上が経ちました。黄金連休、進捗どうですか（[肉ソン](https://atnd.org/events/64770)に参加しましたが、掲げた目標が達成できなかったのでQiitaに記事を書きます）。
+
+`magrittr`便利ですね。`pipeR`も頑張って欲しいですね。そんな私はなんでもかんでもチェインで繋げてしまう、`%>%`pipe`%>%`中毒者です。
+
+`magrittr`のおかげでRでの作業が捗っているのですが、処理をしているとあれこれとわがままな発想が浮かんできました。そんなわがままな私の願いを叶える方法。基本的にvignetteに書いてあることなので、より詳しく（`magrittr`に馴染みのない人）は`vignette("magrittr")`でご確認ください。vignetteにあるような内容なので、これって常識なのかも（README嫁という自分への戒め）。
+
+## わがまま1: パイプ演算子を使った処理中の返り値を保存しつつ、同時に別な処理もしたい
+
+@dichikaさんのブログで[こんな話があります](http://d.hatena.ne.jp/dichika/20140731/p1)。
+
+> 集計結果を途中でプロットしながらもその結果はオブジェクトに保存しておきたい...
+> tee演算子を使うことで、chainの手を休めずにプロットなどの副作用を実行することが可能になります。
+> 副作用を許しながらもchaninしていく - 盆栽生活 http://d.hatena.ne.jp/dichika/20140731/p1
+
+こんな感じ
+
+```{r, eval=FALSE}
+iris %>% group_by(Species) %>% 
+  summarise(avg = mean(Sepal.Length)) %T>% plot(.) -> res
+```
+
+T演算子を使い途中結果をglobal環境に保存します。T演算子、便利なんだけど実行結果をglobal環境に残しておくのは嫌。結果を表示させるためにはもう一度呼び出さないといけないし...。
+
+→**途中の実行結果はコンソールだけで確認するに留めたい**というわがまま発想。
+
+調べてみたら`magrittr`のvignetteにきちんとAliasesという項目で説明がありました。こんな感じで使います。
+
+```{r, eval=FALSE}
+iris %>% filter(Species == "setosa") %$% {
+  plot(Sepal.Length, Petal.Width)
+  mean(Sepal.Length)
+}
+```
+
+`function()`のように、**中括弧で囲んだ部分に対し、演算子直前の処理結果を複数の関数に渡す**ことでirisデータのSpecies::setosaの花弁幅と萼片長のプロットと萼片長の平均値が同時に出力できました。これは`iris %>% filter(Species == "setosa")`までの処理結果を中括弧で囲った`plot()`と`mean()`に渡しています。さらに`%$%`を使うことで、処理結果の変数にアクセスしているというものです。はっぴーです。
+
+先の例では`%$%`で変数に対し処理を行いましたが、通常の`%>%`を引き渡す場合の注意点として、処理結果を引き渡す関数にはドット（magrittr処理における第一引数）を明示する必要があります。普段から関数名だけ（括弧なし）あるいは第一引数を省略している人は気をつけてください。
+
+```{r, eval=FALSE}
+# これはoK
+iris %>% {
+  str(.)
+  summary(.)
+}
+# だめな例。第一引数を省略、関数名のあとに括弧をつけない
+iris %>% {
+  str()
+  summary
+}
+```
+
+### ミソ
+
+なんでこんなことができるのかをざっくり説明すると、**パイプ処理は無名関数としても機能することができる**ためです。上の例では、つぎの処理と同じことをパイプ処理によっていくつか省略しているということです。
+
+```{r, eval=FALSE}
+# 無名関数としての処理
+iris %>% (function(x) {
+  str(x)
+  summary(x)
+})
+
+# パイプ処理を施した無名関数として扱う
+iris %>% {
+  str(.)
+  summary(.)
+}
+```
+
+複数の処理を記述した`function()`とその引数である`x`を省略しているということで。なので中括弧が必要と。...なるほどです。なお中括弧内で更にパイプ処理を使うことも可能です。
+
+```{r, eval=FALSE}
+mtcars %>% lm("mpg ~ wt", data = .) %$% {
+  print(.)
+  broom::tidy(.) %>% knitr::kable()
+}
+```
+
+## わがまま2: 再帰的に利用できるようglobal環境にも保存したい
+
+上の方法では、途中結果の代入ができません（T演算子を使っていないため？）。というわけで**集計値の表示も保存もプロットもまとめてしたいんじゃ**、という場合には関数内で使用するように**永続代入 `<<-` を使用する**と超はっぴー。
+
+```{r, eval=FALSE}
+iris %>% filter(Species == "setosa") %$% {
+  plot(Sepal.Length, Petal.Width)
+  mean(Sepal.Length)
+  res <<- (.) # <- はだめ。永続代入するとよい
+}
+head(res)
+#   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+# 1          5.1         3.5          1.4         0.2  setosa
+# 2          4.9         3.0          1.4         0.2  setosa
+# 3          4.7         3.2          1.3         0.2  setosa
+# 4          4.6         3.1          1.5         0.2  setosa
+# 5          5.0         3.6          1.4         0.2  setosa
+# 6          5.4         3.9          1.7         0.4  setosa
+```
+
+## わがまま3: ggplot2を使った作図もしたい
+
+`qplot()`と`ggplot()`ではプロット前の演算子が異なるので注意。`qplot()`ではデータセットそのものを引き渡す`%>%`でokですが、`ggplot()`の場合は変数にアクセスする`%$%`を使いましょう。
+
+```{r, eval=FALSE}
+iris %>% filter(Species == "setosa") %>% {
+  qplot(Sepal.Length, Petal.Width, data = .)
+}
+
+iris %>% filter(Species == "setosa") %$% {
+  ggplot(data = ., aes(Sepal.Length, Petal.Width)) + geom_point()
+}
+```
+
+最初は関数の省略とかイミフwwwだったんですが、理解すると気持ちいいイイイ。あれこれ捗りそうです。さんきゅーStefan!!
