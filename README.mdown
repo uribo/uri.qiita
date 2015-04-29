@@ -1,9 +1,8 @@
-qiita
-=====
+# qiita
 
 My [Qiita](https://qiita.com/) article backup.
 
-Writed articles were [here](http://qiita.com/uri).
+Written articles were [here](http://qiita.com/uri).
 
 ## CONTENTS
 
@@ -11,20 +10,20 @@ Writed articles were [here](http://qiita.com/uri).
 
 0. [進捗を評価する関数を作った #進捗を支える技術](http://qiita.com/uri/items/d470ba8d68bf9dabebd3) 150102
 0. [ファイル中で指定しているカラーコードを把握する #進捗を支える技術](http://qiita.com/uri/items/54b2f055eee3298b2c3d) 150119
-0. [インストールしたRパッケージのあれこれ - Qiita](http://qiita.com/uri/items/8fa7e194013977899f86) 150122
-0. [Macで使えるテキストエディタアプリに隠された機能 - Qiita](http://qiita.com/uri/items/883bd88875b6cb8e2bdb) 150123
-0. [RStudio 0.99の変更点と最近のRコードの書き方 - Qiita](http://qiita.com/uri/items/a60f28d437c773010daf) 150128
-0. [R - ソースコードの中でも絵文字を使う :rocket: #進捗を支える技術 - Qiita](http://qiita.com/uri/items/e27adda87bb0c32f18ff) 150207
-0. [Rで絵文字（sushi <- c(:sushi:)への道） - Qiita](http://qiita.com/uri/items/bcb702faef242bdd9820) 150214
-0. [Rを使ったスクリーンキャプチャ: webshotパッケージの応用 - Qiita](http://qiita.com/uri/items/93c03e4be8b61957337e) 150222
-0. [LaTeX文書中に絵文字的なもの（Font-Awesome）を取り入れる - Qiita](http://qiita.com/uri/items/00afdd95e68d47fd917b) 150328
-0. [R言語を扱う際のtips by Rstatistics.net - Qiita](http://qiita.com/uri/items/19ad62594527a67d6783) 150402
-0. [RでAPIデータを扱うときはrlistを使うとストレスフリー - Qiita](http://qiita.com/uri/items/acd75391287014ca515f) 150404
-0. [R - webページやクラウド上にあるファイルを読み込みまくる ~ 基礎編 - Qiita](http://qiita.com/uri/items/19159c7ff3f771cfa761) 150406
-0. [R - webページやクラウド上にあるファイルを読み込みまくる ~ 応用編 - Qiita](http://qiita.com/uri/items/2e108d6fcbd80ef58444) 150406
-0. [RStudio v0.99に搭載されたコードスニペット機能が便利 - Qiita](http://qiita.com/uri/items/50b651c2885b421e0ff4) 150424
-0. [SMAによるII型回帰をRでやってみる #rstatsj - Qiita](http://qiita.com/uri/items/f3f36795b7e6df778e83) 150427
-0. [R - pipe中毒になったら、更にわがままな人間になった - Qiita](http://qiita.com/uri/items/17c213bf2bca7c95b154) 150429
+0. [インストールしたRパッケージのあれこれ](http://qiita.com/uri/items/8fa7e194013977899f86) 150122
+0. [Macで使えるテキストエディタアプリに隠された機能](http://qiita.com/uri/items/883bd88875b6cb8e2bdb) 150123
+0. [RStudio 0.99の変更点と最近のRコードの書き方](http://qiita.com/uri/items/a60f28d437c773010daf) 150128
+0. [R - ソースコードの中でも絵文字を使う :rocket: #進捗を支える技術](http://qiita.com/uri/items/e27adda87bb0c32f18ff) 150207
+0. [Rで絵文字（sushi <- c(:sushi:)への道）](http://qiita.com/uri/items/bcb702faef242bdd9820) 150214
+0. [Rを使ったスクリーンキャプチャ: webshotパッケージの応用](http://qiita.com/uri/items/93c03e4be8b61957337e) 150222
+0. [LaTeX文書中に絵文字的なもの（Font-Awesome）を取り入れる](http://qiita.com/uri/items/00afdd95e68d47fd917b) 150328
+0. [R言語を扱う際のtips by Rstatistics.net](http://qiita.com/uri/items/19ad62594527a67d6783) 150402
+0. [RでAPIデータを扱うときはrlistを使うとストレスフリー](http://qiita.com/uri/items/acd75391287014ca515f) 150404
+0. [R - webページやクラウド上にあるファイルを読み込みまくる ~ 基礎編](http://qiita.com/uri/items/19159c7ff3f771cfa761) 150406
+0. [R - webページやクラウド上にあるファイルを読み込みまくる ~ 応用編](http://qiita.com/uri/items/2e108d6fcbd80ef58444) 150406
+0. [RStudio v0.99に搭載されたコードスニペット機能が便利](http://qiita.com/uri/items/50b651c2885b421e0ff4) 150424
+0. [SMAによるII型回帰をRでやってみる #rstatsj](http://qiita.com/uri/items/f3f36795b7e6df778e83) 150427
+0. [R - pipe中毒になったら、更にわがままな人間になった](http://qiita.com/uri/items/17c213bf2bca7c95b154) 150429
 
 ### 2014
 
