@@ -1,0 +1,102 @@
+---
+title: "Rで本を書く"
+author: "Shinya Uryu"
+date: "2015年5月8日"
+output: html_document
+---
+
+```{r}
+opts_chunk$set(eval = FALSE)
+```
+
+## はじめに
+
+[Gitbook](https://www.gitbook.com)というものがある。Gitbookを使えばマークダウン形式で書かれたファイルを本の形式で表示したり電子書籍として公開・配布することができる。使い道はいろいろあると思うのだけど、自分は**RユーザーなのでRのことを書きたい**。その際、図の貼り付けは自動的にできるようにしたいし、出力結果の表示はコピペしたくない。要するに、**`.md`でなくて`.Rmd`で、Rのコードを実行したりしながらあれこれ書きたい**。...そんな願いは[`Rgitbook`](https://github.com/jbryer/Rgitbook)を使えば叶えることができる。
+
+## セットアップ
+
+`Rgitbook`はCRANに登録されていない野良パッケージ。GitHubにリポジトリがあるのでそちらからダウンロードする。
+
+```{r}
+library(devtools)
+install_github("jbryer/Rgitbook")
+library(Rgitbook)
+```
+
+```{r}
+checkForGitbook()
+# Error in checkForGitbook() : 
+#   Cannot find node.js. You can install it from http://nodejs.org/download/
+```
+
+どうもRgitbookのエラー修正・更新がとまっているみたいで、蓮くんをはじめとした有志が解決案を提案している ref) [https://github.com/jbryer/Rgitbook/issues/23](https://github.com/jbryer/Rgitbook/issues/23)。というわけでそちらのリポジトリから再度ダウンロード。
+
+```{r}
+# install_github("renkun-ken/Rgitbook")
+install_github("liyi-1989/Rgitbook")
+checkForGitbook()
+# checking npm
+# checking gitbook
+# gitbook is installed and available
+```
+
+### 新規GitBookの作成
+
+```{r}
+newGitbook("~/rpkg_showcase/") # GitBookを作るディレクトリ、フォルダ名を指定する
+```
+
+指定したフォルダ内に４つのファイルができた。
+
+```{r}
+initGitbook()
+```
+
+`initGitbook()`は`SUMMARY.md`に記述されているマークダウンファイルを生成する関数。`SUMMARY.md`に従ってファイルを自動作成してくれるので大変便利だ。その際に作成されるファイルは、[こちら](https://github.com/liyi-1989/Rgitbook/blob/master/R/initGitbook.R#L23)のようになっている。chunkオプションや俺々風な変更を加えたい場合には、フォークしてから該当ファイルを編集し、再度パッケージとしてビルド・インストールすると良い。自分は[次のようにしている](https://github.com/uribo/Rgitbook/blob/master/R/initGitbook.R)。
+
+## ビルド
+
+`buildRmd()`は`.Rmd`ファイルを実行し、`.md`として出力してくれる関数なのでとても重要。ある程度作業を進めたら定期的に`buildRmd()`を実行しよう。
+
+```{r}
+buildRmd()
+```
+
+この関数を実行すると、`.Rmd`ファイルから同名の`.md`ファイルが作成される。
+
+しかしこれで終わりではない。次に`buildGitbook()`関数でGitbook全体のビルドを行う必要がある。ビルドをすると`_book`というフォルダができあがる。Gitbookの実態は、ここにあるHTMLをもとに表示しているので、この作業が欠かせない。ビルドが成功したらできたものを見てみる。`openGitbook()`でビルドされたgitbookの内容をブラウザで確認することができる。
+
+見た目はこんな感じになる -> http://suryu.me/rpkg_showcase/utility/Rgitbook.html
+
+## GitHubにリポジトリをつくる
+
+ここまできたら、Gitbookの公開先としてGitHubにリポジトリを作成する。`Rgitbook()`には`publishGitbook()`という便利な関数があり、`_book`フォルダのファイルをgh-pagesブランチにプッシュしてくれる。
+
+```{r}
+publishGitbook("uribo/rpkg_showcase") # GitHubのユーザー名/対象リポジトリ名
+```
+
+## おわりに
+
+一連の作業をまとめると次のような感じ。
+
+1. `checkForGitbook()` # Gitbookがインストールされているかを確認
+2. `newGitbook()` # 新規gitbook用のディレクトリを用意
+3. `SUMMARY.md`を編集
+4. `initGitbook()` # `.Rmd`ファイルを自動生成
+5. 各`.Rmd`ファイルを編集
+6. `buildRmd()` # `.Rmd` -> `.md`
+7. `buildGitbook()`
+8. `openGitbook()`
+9. `publishGitbook()` # gh-pagesブランチに変更点をプッシュ
+
+というわけで、つまづくところもあったがなんとかして`.Rmd`で本を書く用意ができた。めでたい。**備えよう**。
+
+### 目標達成
+
+そもそもこれで何がしたかったのかというと、パッケージの利用方法について、これまでEvernoteにちまちまメモをとっていたのだけど、Evernote上ではR実行できないし、数が増えてきてつらくなってきた（検索は便利だけど）。
+
+あくまでも個人のメモ段階であるが、Rパッケージの使い方メモと、パッケージ開発のための覚え書きリポジトリを立てた。個人のチラシの裏段階だが、将来誰かのお役に立てれば幸いである。
+
+* [uribo/rpkg_showcase](https://github.com/uribo/rpkg_showcase); [**Gitbook**](https://uribo.github.com/rpkg_showcase)
+* [uribo/myr_dev](https://github.com/uribo/myr_dev)
