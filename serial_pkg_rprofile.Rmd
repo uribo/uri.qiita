@@ -1,0 +1,140 @@
+---
+title: "DESCRIPTIONファイルを紐解く"
+author: "Shinya Uryu"
+date: "2015年5月24日"
+output: html_document
+---
+
+親愛なるシリアルパッケージクリエイターのみなさま、ごきげんよう（~~ｷｭｱﾎｸｿｴﾑです~~）。一人前のシリパクになるべく修行中です。Rパッケージを作成する際に避けては通れない（必ず作成する必要がある、mandatoryな）DESCRIPTIONファイルについて今更ながら調べてみました。
+
+## DESCRIPTIONファイルとは何か
+
+[Writing R Extensions](http://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file)の内容からざっくり引っ張ってくるとこんな感じ。
+
+* DESCRIPTIONファイルはパッケージについての簡単な情報を含む
+* 統一されたフォーマット（[Debian Control File](http://www.debian.org/doc/debian-policy/ch-controlfields.html)）で書かれる
+* コロンとスペース（例えば `Title: hoge`）を挟んで各項目について記述する
+* 複数行に渡る項目（Descriptionなど）についてはタブやスペースによる文字送りをおこなう
+* 項目名は大文字と小文字を区別する（頭文字は大文字にするべし）
+
+### DESCRIPTIONに記載されるべき項目
+
+必須なものと任意に適宜記載するものがあります。以下にあげるものが**すべてではないので注意**
+
+| 項目名 | 概要 | 必要性 |
+|--------|:-----|:-------| 
+| `Package` | パッケージ名（英数字およびドットが使用可）。パッケージの説明は`Package`や`Title`ではなく`Description`に記載すべし | **必須** |
+| `Version` | ドットあるいはハイフン区切りの３桁あるいは２桁からなる数値によるバージョン表記。下記でも説明 | **必須** |
+| `License` | ライセンス | **必須** |
+| `Title` | 簡単なパッケージの説明。単語は大文字にする（いわゆるcapitalization rules） | **必須** |
+| `Description` | パッケージの概要を細かく記載。 | **必須** |
+| `Authors@R`| `person()`を使用した作成者の表記 | 必須？ |
+| `Author` | パッケージ作成者。複数人いる場合はそれぞれの役割を記載すると良い | **必須** |
+| `Maintainer` | パッケージの代表管理者（一人）。名前のあとにメールアドレスを記載する。`bug.report()`を使用したバグ報告にはこのアドレスが使用される？| **必須** |
+| `Depends` | パッケージが依存しているR本体のバージョンやパッケージ | 任意 |
+| `Imports` | このパッケージ本体が明示的に依存している（関数やデータセットを使用する）パッケージ | 任意 |
+| `Suggests` | パッケージ内で使用しないが、 | 任意 |
+| `BugReports` | Maintainerへのバグ報告の代わりとして、用意されているバグ報告先。GitHubのissuesへのリンクがしばしば利用される | 任意 |
+| `URL` | 適宜参照してほしいURL。複数ある場合にはカンマかスペースで区切って記載する | 任意 |
+| `LazyData` | 遅延評価をおこなうがどうかを真偽値で記載 | 任意 |
+| `VignetteBuilder` | vignettesのビルド方法（例. `knitr`） | 任意 |
+| `Copyright` | 著作権の所持者 | 任意 |
+| `Date` | リリースした日付。`YYYY-MM-DD`表記 | 任意 |
+
+### バージョンの付け方
+
+3桁からなるバージョン表記は次のような構造となっている。 ref) http://ja.wikipedia.org/wiki/バージョン#.E3.82.B3.E3.83.B3.E3.83.94.E3.83.A5.E3.83.BC.E3.82.BF.E3.83.BB.E3.82.BD.E3.83.95.E3.83.88.E3.82.A6.E3.82.A7.E3.82.A2
+
+```
+<メジャーバージョン>.<マイナーバージョン>.<メンテナンスバージョン>
+```
+
+著名な`ggplot2`パッケージがメジャーバージョン1.0.0となったのは[去年の話](https://github.com/hadley/ggplot2/releases/tag/v1.0.0)。GitHubへの[コミット開始](https://github.com/hadley/ggplot2/commit/6198457400c66d0774006c75353a1e7f1dd2806a)から６年以上の歳月を経てのリリースとなっている。それまでは正式なリリースではないというのも恐ろしい話。
+
+また`ggplot2`の開発者であるHadley Wickhamは開発版パッケージのバージョン表記については、`.9000`で開始する4桁での表記を推奨している（~~熱心な羽鳥信者であればパッケージ名の表記をこのようにしている。私自身はこれを忘れることが多い~~）。
+
+### ライセンスの付け方
+
+ライセンスの表記は利用者や開発者のために必ず記載しましょー。Rパッケージで使用されている主要なライセンスとして`GPL-2`, `GPL-3`, `LGPL-2`, `LGPL-2.1`, `LGPL-3`, `AGPL-3`, `Artistic-2.0`, `BSD_2_clause`, `BSD_3_clause`, `MIT`があります。適切なライセンスを選ぶようにすると良いでしょう。
+
+ライセンスの付け方で迷うときはこちらを参考にすると良いです。
+
+* [ライセンスの選択を恐れる必要はありません - Qiita](http://qiita.com/tadsan/items/99d816e78ca429093b75)
+* [[GPL][MIT]ライセンスについて基本中の基本的なこと | tomotomo Snippet](http://tomotomosnippet.blogspot.jp/2010/12/gplmit.html)
+* [たくさんあるオープンソースライセンスのそれぞれの特徴のまとめ | コリス](http://coliss.com/articles/build-websites/operation/work/choose-a-license-by-github.html)
+* [MITライセンスってなに？どうやって使うの？商用でも無料で使えるの？ |  WisdomMingle.com（ウィズダムミングル・ドットコム）](http://wisdommingle.com/mit-license/)
+
+別途ライセンスの表記をおこなう場合は`MIT + file LICENSE`のようにして`LICENSE`ファイルを用意してください。
+
+### AuthorとAuthors@R
+
+ここがよくわかっていないですが...。
+
+比較的最近のパッケージでは`Authors@R`という項目が使用されています。これは`person()`関数を使用したパッケージ作成者の表記であり、人間さんにとって読みやすい`Author`に対して、Rさんが読みやすいように用意されたものと思われます。
+
+`person()`関数は次のようになっています。
+
+```r
+person(given = NULL, family = NULL, middle = NULL,
+       email = NULL, role = NULL, comment = NULL,
+       first = NULL, last = NULL)
+```
+
+ここで重要なのは`role`引数で、パッケージ作成における個々人の役割を明記することが推奨されています。`role`引数に渡す値は次のものがあります。
+
+| 値 | 役割 |
+|----|:-----|
+| aut | Author: パッケージの著者。パッケージの引用時に明示されるべき人 |
+| com | Compiler: パッケージのコードについてとりまとめをおこなう人 |
+| ctb | Contributor: パッケージ作成において貢献してくれた人 |
+| cph | Copyright holder: 著作権の保持者 |
+| cre | Creator: パッケージの管理者 |
+| ths | Thesis advisor: パッケージが論文の一部である場合の指導教員 |
+| trl | Translator: コンピュータ言語の翻訳者 |
+
+### ImportsとSuggestsの区別
+
+`Imports`と`Suggests`は依存性の強さで区別されます。ざっくり言うとつぎのような関係です。
+
+* `Imports`: パッケージ内の関数内で使用する外部パッケージ。それがないと関数が動作しない。そのため、パッケージのインストール時にはImportsに記載されたパッケージも併せてインストールされる
+* `Suggests`: パッケージ内の関数本体では使用しないが、vignettesやtest環境で用いているパッケージ。パッケージインストール時にはこれらのパッケージはインストールされない
+
+これらの項目はアルファベット順に、一行に一つのパッケージを記載すると良い。特定のバージョンに依存する場合は、比較演算子を用いて明示します。
+
+```
+Imports:
+    dplyr,
+    ggvis
+Suggests:
+    MASS (>= 7.3.0)
+```
+
+## シリパク的.Rprofileの設定
+
+毎度毎度、Authorを書くのは面倒ですよね。というわけで個人用の設定を.Rprofileに記載しておくと良いです。というのは実際、devtoolsのREADMEにも[書いてある](https://github.com/hadley/devtools/#other-tips)。
+
+Hadleyの言うことに[従いました](https://github.com/uribo/dotfiles/blob/master/.Rprofile)。
+
+ここにある内容に従うと、`devtools::create()`したときやRStudioで新規パッケージ作成をおこなった際に用意されるDESCRIPTIONファイルに設定を反映できるので便利です。
+
+## 人の振り見て我が振り直せ
+
+能書きはさておき、実際のパッケージを見てみるのが勉強になることもあります。
+
+昔のパッケージは上記の規則に従っていないものもあるみたいですが、最近のパッケージだとCRANのチェックが厳しいのか、規則通りにDESCRIPTIONファイルが書かれているものが多い印象があります。各パッケージのDESCRIPTIONは`library(help = "ggplot2")`のようにするかhttp://cran.r-project.org/web/packages/testthat/index.html のようなページで見れます。GitHubにリポジトリがあるパッケージは、そちらも参照すると良いでしょう。
+
+## シリアルパッケージクリエイターになりたくなったら
+
+まだシリアルパッケージクリエイターではないけど、少しでも興味を持たれた方は次のページを読むと良いでしょう。シリパクの楽しさが伝わると思います。
+
+* [Rパッケージ作成ハドリー風: devtools, roxygen2, testthatを添えて](http://www.slideshare.net/kaz_yos/r-devtools-roxygen2): パッケージ作成に目覚めるきっかけとなった発表資料。パッケージ作成の手順が詳細に！
+* [2分でパッケージを作ってインストールする](http://www.slideshare.net/TokorosawaYoshio/r38): おにいさん1。パッケージを作って公開するまでの手順
+* [東京R非公式おじさんが教える本当に気持ちいいパッケージ作成法](http://www.slideshare.net/teramonagi/r-38511360): おにいさん2。パッケージ作成の今昔物語。ハンズオンでパッケージの作成する
+* [Hadley Wickham: Impact the world by being useful « IMS Bulletin](http://bulletin.imstat.org/2014/12/hadley-wickham-impact-the-world-by-being-useful/): シリパクの心得的な...胸熱
+
+## 参考
+
+* [Writing R Extensions](http://cran.r-project.org/doc/manuals/R-exts.html#The-DESCRIPTION-file): ちょくちょく改訂されているみたい。本家CRANの指示書き
+* [Welcome · R packages](http://r-pkgs.had.co.nz/): Hadley Wickhamの聖書の一つ。シリパクユーザー必見
+* [Rの拡張を書く （R 2.15.2）](http://www.slideshare.net/itoyan110/r-exts-2152jp): Rバージョン 2.15.2なので古い情報もある
+ 
