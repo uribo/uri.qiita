@@ -26,6 +26,9 @@ Written articles were [here](http://qiita.com/uri).
 0. [R - pipe中毒になったら、更にわがままな人間になった](http://qiita.com/uri/items/17c213bf2bca7c95b154) 150429
 0. [データ解析その前に: 分布型の確認と正規性の検定 #rstatsj](http://qiita.com/uri/items/e656f90e9dda342c54bb) 150507
 0. [Rで本を書く :books:](http://qiita.com/uri/items/9e5202e9851b48397450) 150512
+0. [DESCRIPTIONファイルを紐解く](http://qiita.com/uri/items/752e1b7f6ecc8174c231) 150524
+0. [Packratの使い道を考えてみた](http://qiita.com/uri/items/5d473a5df91954585e62) 150607
+0. [R - 学会発表のためのggplot2の設定めも](http://qiita.com/uri/items/615653e83642d7e475de) 150608
 
 ### 2014
 
