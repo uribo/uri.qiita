@@ -1,0 +1,125 @@
+---
+title: "Packratの使い道を考えてみた"
+author: "Shinya Uryu"
+date: "2015年6月7日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+周囲で使っている人を見かけないし、いまいち盛り上がりに欠ける感じがする、Rのパッケージ管理環境であるpackratの使い方とその使い道について割と真剣に考えてみたメモ。packrat自身はRStudio謹製だし、なかでもJ.J. AllaireとKevin Usheyが推しているのでその有益性については確実な。
+
+## 既存情報の整理
+
+packratがいまいち普及していない理由は、web上での情報が少ないためかなと思う。[公式のチュートリアル](http://rstudio.github.io/packrat/)があったり、[webinarが催されている](http://rstudio.github.io/packrat/webinar/packrat-webinar-2014.html#1)が、その他*packratを使ってみた*、的な例が少ない。
+
+日本語だと@dichikaさんの紹介記事（[packratで人類の拡大再生産に貢献する - 盆栽日記](http://d.hatena.ne.jp/dichika/20131220/p1)）が良い。
+
+[こちらの記事](http://datascience.la/packrat-presentation-at-user-2014/)ではYouTubeの動画も埋め込まれているのでpackratに興味のある人は見てみると良い。
+
+RStudioのpackageパネルを有効にしておくと何かと便利（ただし、パッケージのインストール状態を取得しているのか、起動時に動作が重くなる気がするので止めた）
+
+## packratを使う
+
+現在CRANに登録されている、インストールされているバージョンは0.4.3。packratの管理環境としてRprojectが想定されているので、IDEのRStudioとの相性が良い（GUI Rなどでは試していない）。新しくpackratでの管理を開始するには、`.Rproject`のあるディレクトリで`packrat::init()`を実施するか、メニューバーのToolsから、Project Options... -> Packratを選択し、`Use packrat with this project`にチェックをつける。これを行うと、Rの環境設定ファイルである`.Rprofile`と`packrat/`フォルダが作成され、packrat管理の体制が整う。
+
+### 主要関数
+
+* `snapshot()`: プロジェクト中で使用しているパッケージおよびそのバージョンをprivate libraryに記録する
+* `status()`: 最新のsnapshot状態と現在のライブラリ環境の比較を行う。登録されているがインストールされていないパッケージや、インストール済みだが使用されていないパッケージを確認する
+* `restore()`: snapshotに記録されたパッケージ情報をプロジェクト内のprivate libraryに反映する
+
+それぞれの関数が何をしているのかを理解するには実行してみるのが一番。packrat管理の実際の手順は、1. Rコードを書く（コード内でパッケージの呼び出しを行う）, 2. `snapshot()`により必要なパッケージとそのバージョンを記録する, 3. `restore()`でパッケージを適宜ダウンロード, 4. `status()`でパッケージの状態を確認する（→適宜2と3を実行）、という感じだろうか。
+
+### 実例
+
+あるコード中に`tidyr`パッケージの呼び込みを指定する`library(tidyr)`書いたとする。これをpackrat管理してみる。もちろんコード内で明記したパッケージが依存しているパッケージも管理の対象となるので細かいことは気にせず、普段通りにコードを書けば良い。
+
+```{r, eval = FALSE}
+# library(tidyr) # と別ファイル中に記述しているときに
+packrat::status()
+# The following packages are referenced in your code, but are not present
+# in your library nor in packrat:
+# 
+#     plyr
+#     reshape2
+#     tidyr
+# 
+# You will need to install these packages manually, then use
+# packrat::snapshot() to record these packages in packrat.
+```
+
+この状態では、パッケージがインストールされていない。インストールしてね、ということなのでまずsnapshowに登録してみる。
+
+```{r, eval = FALSE}
+packrat::snapshot()
+# Adding these packages to packrat:
+#              _      
+#     plyr       1.8.2
+#     reshape2   1.4.1
+#     tidyr      0.2.0
+# 
+# Fetching sources for plyr (1.8.2) ... OK (CRAN current)
+# Fetching sources for reshape2 (1.4.1) ... OK (CRAN current)
+# Fetching sources for tidyr (0.2.0) ... OK (CRAN current)
+# Snapshot written to '/Users/uri/git/test/packrat/packrat.lock'
+```
+
+`packrat.lock`というファイルを見るとパッケージ名、バージョン、インストール先が記録されていることがわかる。
+
+```
+Package: tidyr
+Source: CRAN
+Version: 0.2.0
+Hash: 3445f04db2073bc56edcf672268ad48a
+Requires: dplyr, lazyeval, reshape2, stringi
+```
+
+この段階ではパッケージ情報が記録されただけなので、private libraryにパッケージをインストールするには`restore()`を実施する。
+
+```{r, eval = FALSE}
+packrat::status()
+# The following packages are used in your code, tracked by packrat, but no longer present in your library:
+#                 from   to
+#     plyr       1.8.2   NA
+#     reshape2   1.4.1   NA
+#     tidyr      0.2.0   NA
+# 
+# Use packrat::restore() to restore these libraries.
+
+packrat::restore()
+# Installing plyr (1.8.2) ... OK (downloaded binary)
+# Installing reshape2 (1.4.1) ... OK (downloaded binary)
+# Installing tidyr (0.2.0) ... OK (downloaded binary)
+
+packrat::status()
+# Up to date.
+```
+
+これでおｋ。コード内でのパッケージの呼び出し指定は`library()`でも`require()`でも良い。注意として、コメントアウトしたコードや.Rmdファイルでのチャンクオプションで`eval=FALSE`としているときには管理の対象とならない。あくまでも実行することを前提としているコードがpackrat管理の対象となるみたい。
+
+もちろん手動でインストールしても良い。コード内で使用しないけど、使用したいパッケージやGitHubにあるパッケージをインストールしたいとき（.Rprofileで呼び出すパッケージとかはpackratの管理対象とならないので手動インストールする）は、コンソールでパッケージをインストールしてpackratに登録する。前者であれば`packrat::install()`, 後者の場合は`packrat::install_github()`を実行する。またローカルにあるパッケージには`packrat::install_local()`。
+
+## 外部に環境を再現する
+
+`bundle()`および`unbundle()`を使う。`bundle()`を使うとRproject内のファイルが圧縮ファイルとなる。この圧縮ファイルを`unbundle()`することで異なる実行環境でもライブラリは同じ状態でコードを再現することが可能になる。
+
+## packratでの管理をやめる
+
+やっぱりこのプロジェクトではpackratを使う必要はないな、と思ったときなどにpackratで管理しているパッケージなどが邪魔になる。えーっい、っとpackratフォルダを削除すると**packratフォルダがないんだけど**と怒られるので手順を踏んで解除する必要がある。`packrat::disable()`でプロジェクトのpackrat管理を止めることができ、実行するとライブラリのパスを初期値に戻した旨が出力される。再度packrat管理する場合には`packrat::init()`。
+
+メニューバーからも実行可能。Tools -> Project Options... -> Packratで`Use packrat with this project`のチェックを外せば、`.Rprofile`を書き換えた旨が表示され、packratの呪縛から開放される。しかしまだpackratフォルダは残っているので、こちらは手動で削除するのがベター？
+
+## まとめ: packratが使えそうな場面
+
+個人、なおかつ普段の作業環境ではpackratのありがたさが特に無いような気がする。packratが使えそうな場面として次のような例を考えた。
+
+### 複数人での作業（解析、パッケージ作成）。
+
+コードを共有していても、お互いにインストールしているパッケージのバージョンが違うとかがあることもあるので、そういうときにはpackratで管理するのが良さ気。解析時には、再現性という理由からもpackratの利用が薦められる。数日なら良いが、１年３年と時間が経つとパッケージの関数も大きく変更されていたり、特定のバージョン以降は関数が利用できなくなっていたりすることがある。パッケージが新しくなって正常に動作しません、とかなると悲惨。
+
+### 講習や勉強会
+
+こちらも複数人での作業。例えばRの講習では、参加者が必要なパッケージをインストールしていないときに時間を割いてインストールする、ということがしばしばある。`bundle()`はソースコードを含めて環境を再現することができるので、時間が限られる、オフラインの環境では良さ気。
+
+パッケージ管理、煩わしいかなと考えていたけれど、上記の場合はいいかもしれない。使う機会があれば使ってみたい。
