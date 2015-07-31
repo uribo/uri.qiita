@@ -1,0 +1,126 @@
+---
+title: "殺伐としたSlackのチャンネルにRの出力が！を実現する"
+author: "Shinya Uryu"
+date: "2015年6月7日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+AA略 ref) [ようかんマンとは (ヨウカンマンとは) [単語記事] - ニコニコ大百科](http://dic.nicovideo.jp/a/%E3%82%88%E3%81%86%E3%81%8B%E3%82%93%E3%83%9E%E3%83%B3)。
+
+Slackを使っているとソースコードと出力結果をチームのみんなと共有したいときがある。コピペでは面倒なのでなんとかできないかと模索していたところ（*自分は何もしていなかった。チームメンバーががんばっていた*）、[`{slackr}`](https://github.com/hrbrmstr/slackr)という良さ気なパッケージを見つけた。開発者は信頼と実績のBob Rudisさん。パッケージを使ってみた感想と使い方のメモ。
+
+なお、当パッケージの紹介はすでにおなじみの「[盆栽生活](http://d.hatena.ne.jp/dichika/20150701/p1)」に載っているが、どうも使い勝手がよくなかったとのことで詳しい解説が行われていない。他の方法について述べられているので、そちらも参考にしてほしい。
+
+[`{slackr}`](https://github.com/hrbrmstr/slackr)はCRANにもあるが、開発が盛んなので開発版をGitHubからインストールしよう。
+
+```{r, eval=FALSE}
+devtools::install_github("hrbrmstr/slackr")
+```
+
+私がこの記事を書いている段階でのバージョンは`r packageVersion("slackr")`だ。
+
+## 設定
+
+READMEを読むと、ルートディレクトリに`.slackr`という設定ファイルを置けとある。Slackにコードを投稿するための設定用関数`slackr_setup()`は、既定値でこのファイルを読み込むようになっている。なお引数*config_file*でファイルを指定することができる。別チームやチャンネルへの投稿を行う際には`slackr_setup()`を使って設定を切り替えると良い。
+
+`.slackr`には次の項目を記載する。用途に応じて不要な項目もあるが、基本的にこれらの項目は埋めていたほうが良い。それでは各項目とtokenの取得方法について説明する。
+
+```
+token: YOUR_INCOMING_WEBHOOK_TOKEN
+channel: #general
+username: slackr
+incoming_webhook_url: https://YOUR_TEAM.slack.com/services/hooks/incoming-webhook?
+api_token: YOUR_FULL_API_TOKEN
+```
+
+* token: `INCOMING_WEBHOOK`... Slackのチャンネル名を右クリックすると表示される'Add a service integration...'のリンクのURL末端にある`https://hoge.slack.com/services/new?channel_id=XXXXXXX`の`XXXXXXX`部分
+* channel: 投稿先のチャンネル名。よく使うチャンネルを指定しておくと良い（ex. #general）
+)
+* username: 投稿するボットの名称。
+* incoming_webhook_url: まずは`https://hoge.slack.com/services/new`へアクセスし、Incoming WebHooksを有効にする。生成された'Webhook URL'が'incoming_webhook_url'となる。コピーして貼り付けると良い
+* api_token: `API_TOKEN`... https://api.slack.com/web に繋ぎ、AuthenticationのところでチームのTokenを取得する
+
+
+## 投稿
+
+まずは設定ファイルを読み込み、投稿の準備をすませる。上述のようなファイルを作成したら、
+
+```{r}
+library(slackr)
+slackr_setup()
+```
+
+を実行する。
+
+`slackr()`関数あるいは`slack_bot()`関数が投稿の際に用いる関数となる。`{slackr}`の関数はそれぞれ引数で投稿するチャンネルなどの指定ができるので、`slackr_setup()`で読み込んだ設定と異なるチャンネルやusernameでの投稿時には引数の指定を忘れないように。
+
+```{r, eval = FALSE}
+slackr(str(iris))
+```
+
+とすると、設定ファイルのチャンネルにこのように投稿される。
+
+![general___Yokohama_R_Slack.png](https://qiita-image-store.s3.amazonaws.com/0/19462/da6c30d6-b557-a8df-d7d2-f5f556864035.png)
+
+また、複数の処理を渡すこともできる。
+
+```{r, eval = FALSE}
+slackr(ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14), 
+       trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69), 
+       group <- gl(2, 10, 20, labels = c("Ctl","Trt")), 
+       weight <- c(ctl, trt), 
+       lm(weight ~ group))
+```
+
+### 日本語ぇ...
+
+```{r, eval = FALSE}
+"こんにちは" %>% slackr()
+```
+
+![general___Yokohama_R_Slack.png](https://qiita-image-store.s3.amazonaws.com/0/19462/02e0becc-0c96-d682-305f-19d528157cab.png)
+
+なんとなく予感していたが、日本語の扱いはやや苦手なようす。
+
+### プロット（画像）の投稿
+
+現在描画しているplotを画像ファイルとして投稿する。
+
+```{r, eval=FALSE}
+library(maps)
+map("usa")
+dev_slackr(channels = "#random") # このときの投稿はbotではなく、ユーザー本人のものとなる
+```
+
+### ファイルを投稿する
+
+```{r, eval=FALSE}
+slackr_upload(filename = "Rlogo.png")
+```
+
+ソースコードそのものや、画像ファイルをチャンネルに投稿する場合、`slackr_upload()`を利用する。*filename*でファイルのパスを指定し、必要に応じて*title*や*initial_comment*を付ける。
+
+## その他の関数
+
+* `slackr_users()`: チームに参加しているメンバーのログイン情報などを返す
+* `slackr_groups()`: グループの情報を返す
+* `text_slackr()`: メッセージの投稿
+
+**作業する環境は一人だけど**、もっとSlack使ってみたい。というわけでEnjoy!
+
+## 宣伝
+
+Rに関する話題や初心者からの疑問とそれに答える匿名知的集団ホクソエムらのSlackルームはこちら！
+
+<a href="https://r-wakalang.herokuapp.com"><img src="https://r-wakalang.herokuapp.com/badge.svg"></a>
+
+ボタンを押してメールアドレスを入力して登録は完了です！
+
+Slackのメールアドレスの管理的な意味でメールアドレスは支障のないものを登録するようお願いします。
+
+## 参考
+
+* [Rからslack上のお悩み相談室に投稿する - 盆栽日記](http://d.hatena.ne.jp/dichika/20150701/p1)
+* [Pocket: Slack APIを使ってプッシュ通知を受け取ろう](https://getpocket.com/a/read/743583868)

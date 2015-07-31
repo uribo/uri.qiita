@@ -29,6 +29,8 @@ Written articles were [here](http://qiita.com/uri).
 0. [DESCRIPTIONファイルを紐解く](http://qiita.com/uri/items/752e1b7f6ecc8174c231) 150524
 0. [Packratの使い道を考えてみた](http://qiita.com/uri/items/5d473a5df91954585e62) 150607
 0. [R - 学会発表のためのggplot2の設定めも](http://qiita.com/uri/items/615653e83642d7e475de) 150608
+0. [【gifアニメつき】テキストエディタとしてのRStudioを極めたい - Qiita](http://qiita.com/uri/items/a4a6e9abdbe9a913d657) 150723
+0. [殺伐としたSlackのチャンネルにRの出力が！を実現する - Qiita](http://qiita.com/uri/items/acd9f1538098a407f865) 150730
 
 ### 2014
 
