@@ -1,0 +1,71 @@
+---
+title: "【word】docxtractrパッケージで.docx内の表からデータを抽出する【これはすごい】"
+author: "Shinya Uryu"
+date: "2015年8月25日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+**キャプテンアメリカが一晩でやってくれました。**
+
+こんな話があったそうです。
+
+<blockquote class="twitter-tweet" lang="en"><p lang="en" dir="ltr">Is it possible to import data entered in MS Word into R - I have multiple tables in 235 files that need importing <a href="https://twitter.com/hashtag/rstats?src=hash">#rstats</a></p>&mdash; Richard Telford (@richardjtelford) <a href="https://twitter.com/richardjtelford/status/635362926904373248">August 23, 2015</a></blockquote> <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+これに対し、Rudisは「Yes」と答え、たった数時間のうちに素晴らしいパッケージを開発しました。
+
+パッケージ開発の経緯や詳細についてはRudisの記事を見てください。
+
+* [Using R To Get Data *Out Of* Word Docs | rud.is](http://rud.is/b/2015/08/23/using-r-to-get-data-out-of-word-docs/)
+* [New Pacakge “docxtractr” – Easily Extract Tables From Microsoft Word Docs | rud.is](http://rud.is/b/2015/08/24/new-pacakge-docxtractr-easily-extract-tables-from-microsoft-word-docs/)
+
+ちょっとした説明をすると、Microsoftのofficeファイル（.docxや.xlsx）はXMLで記述されているので、うまいこと処理すればデータを抽出できます。**`{docxtractr}`**はこの処理を関数としてまとめ、パッケージとして提供するものです。GitHubにリポジトリがあるのでインストールして試してみました。
+
+こんなテーブル（7 * 5）を２つもつファイル（`npb.docx`）を用意しました。
+
+![npb.png](https://qiita-image-store.s3.amazonaws.com/0/19462/3c3367d1-4bc0-6c72-5c7e-51a3c1e8f923.png)
+
+どう見てもわーどふぁいるです。本当にありがとうございました。という感じでここからデータ抽出する、という話は手打ちでやる必要があったり、見ただけで嫌になるわーどふぁいる内での表データです。
+
+ですが、**`{docxtractr}`**を使えばそんな気だるさとおさらば！R上でさくっと表データを扱うことができます。
+
+まずはGitHubからパッケージをインストールしてきます。
+
+```{r}
+# devtools::install_github("hrbrmstr/docxtractr")
+library(docxtractr)
+```
+
+### docxファイルを読み込む
+
+`read_docx`関数を使って表データが含まれる`.docx`ファイルを読み込みます。
+
+```{r}
+doc.table <- read_docx(path = "npb.docx")
+doc.table # docx_describe_tbls(doc.table)
+class(doc.table)
+```
+
+`docx`というクラスのオブジェクトです。出力を見ると、どのような表なのかがわかります。
+
+```{r}
+# 読み込んだdocxファイル中に含まれる表の数
+docx_tbl_count(doc.table)
+```
+
+### 個々の表データを取り出す
+
+`docx_extract_tbl`を使って、一つ一つの表データを取り出すことができます。また、Rのデータフレーム操作と同様の添字処理なども可能です。
+
+```{r}
+docx_extract_tbl(docx = doc.table, tbl_number = 1, header = TRUE)
+
+docx_extract_tbl(docx = doc.table, tbl_number = 2, header = TRUE)[2]
+
+docx_extract_tbl(docx = doc.table, tbl_number = 2, header = TRUE) %>% 
+  dplyr::filter(`勝ち` > 50) %>% 
+  knitr::kable()
+```
+
+こうして`docx`から取り出したオブジェクトは`tbl_df`および`data.frame`クラスとなり、R上で扱いやすい形式になります。日本語でも問題ないようですし、このパッケージで救われる人がたくさん出そうですね。素晴らしい。

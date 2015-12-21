@@ -1,0 +1,257 @@
+---
+title: "【まとめ用】Rで日本地図を書く"
+author: "Shinya Uryu"
+date: "2015年4月28日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+```{r, include = FALSE, cache = FALSE}
+opts_chunk$set(eval = TRUE, warning = FALSE, message = FALSE)
+```
+
+Rを使って地図を表示することがしばしばある。その度にやり方を忘れていて、調べ直すことが多い。Google先生に尋ねると、当然のごとく結果が変わっている。時間が経つと、より評価され・より良い内容の記事が検索のトップに並ぶからだ。なので毎回方法が変わってしまう。自分なりの手法を確立しておきたい。
+
+## Rを用いた地理情報データとデータマッピングの流れ
+
+まずは先行して書かれている既存のブログ記事などを参照に、Rを使って地図を描画する手順を整理してみる。大まかな流れとして、
+
+1. 必要なファイル（Shapefile）を読み込む
+2. 描画用のパッケージ関数を使って地図を描く
+3. 目的に応じてデータを地図に追加する（マッピング）
+
+となっている。順を追って手を動かしてみよう。なお個人的に、地図をプロットする際にはこうしたい、という願望があるので、
+
+1. Shapefileは使いたくない。GeoJSONかTopoJSONファイルを使用したい
+    * Shapefileの仕様が謎。複数のファイルが必要だったりして複雑
+    * JSONベースのファイルは軽量かつ読みやすい
+2. プロットには**`{ggplot2}`**を使用したい
+3. 複雑ではなく、限りなくシンプルなコードにしたい
+
+これらをできるだけ達成できるよう頑張る。
+
+### 地図描画のためのパッケージあれこれ
+
+適宜インストール。
+
+```{r, eval = TRUE}
+library(magrittr)
+library(sp)
+library(ggplot2)
+library(rgdal)
+library(broom)
+library(ggmap)
+library(viridis)
+```
+
+### 1 必要なファイルを用意し、Rで扱えるようにする
+
+幾つかの方法があるが、ここでは**`{rgdal}`**の`readOGR`関数を利用してファイルを読み込む。`readOGR`では、ベクター形式のファイルを読み込むことができる。`readOGR`の引数をみると、
+
+```{r, eval = TRUE}
+args(readOGR) %>% as.list() %>%  names()
+```
+
+が用意されている。このうち重要になってくるのは、描画するソースを定義する*dsn*と*layer*である。最低限、これだけを指定すれば読み込んでくれる。今回は**`{rgdal}`**に内臓されているデータを使うことにする。次のコマンドを実行して出力されるディレクトリにデモ用のShapefileがある。
+
+```{r, eval = TRUE}
+path <- vector()
+system.file("vectors", package = "rgdal") %>% {
+  path <<- .
+  print(.)
+}
+```
+
+次のようなディレクトリ構造になっている（一部のみ出力）。
+
+```{r, eval = TRUE}
+list.files(path) %>% grep(pattern = "^trin_inca_pl03", x = ., value = TRUE)
+```
+
+trin_inca_pl03.shpに付属して、幾つかのファイルが用意されている。Shapefileを出力させる場合、これらのファイルも必要になる。では、このtrin_inca_pl03ファイルをRに取り込んでみる。
+
+```{r, eval = TRUE}
+map <- data.frame()
+readOGR(dsn = path, layer = "trin_inca_pl03") %>% {
+  map <<- .
+  print(class(.))
+  str(., max.level = 2)
+}
+```
+
+`readOGR`で読み込んだオブジェクトは**`{sp}`**パッケージで定義されるSpatialPointsDataFrameというものになる。S4メソッドで定義されているので、各オブジェクトへのアクセスは\@スロットを利用する。`str`で示したように、SpatialPointsDataFrameは５つのスロットを持つ。\@dataは属性値を持つデータフレームであり、\@coordsは位置座標の行列オブジェクトである。
+
+```{r, eval = TRUE}
+dplyr::tbl_df(map@data)
+```
+
+地図を描画する場合、元になるファイルが必要になるが、多くの場合Shapefileを使うことになるだろう。しかし、`readOGR`ではShapefile以外のJSON(GeoJSON, TopoJSON)形式のファイルでも読み込むことが可能である。いずれの方法もShapefileの時と同じである。
+
+```{r, eval = TRUE}
+# topojson
+map <- data.frame()
+# 国土交通省 国土地理院 ２０万分１地勢図図を元にしたファイルを用意する
+file.path <- "https://gist.github.com/uribo/b09d642351c03dd975aa/raw/6cd2f7e70922b24f89b442c96c001dc3ab794317/japan_one_twenty_map.topojson"
+readOGR(dsn              = file.path, 
+        layer            = "OGRGeoJSON", 
+        stringsAsFactors = FALSE) %>% {
+          map <<- .
+          print(class(.))
+          str(., max.level = 2)
+}
+```
+
+GeoJSONあるいはTopoJSONの場合、`readOGR`の*layer*引数に渡す値がOGRGeoJSONとなっているが、これは
+
+```{r, eval = TRUE}
+ogrListLayers(dsn = file.path)[1]
+```
+
+で出力されるものである。出力したいlayers名が不明な場合、こちらで確認すると良いだろう。
+
+対象のファイルがGeoJSONあるいはTopoJSON形式である場合、**`{rgdal}`**の代わりに**`{geojsonio}`**を利用することも可能である。
+
+```{r, eval = FALSE}
+geojsonio::topojson_read(file.path) %>% {
+  print(class(.))
+  str(., max.level = 2)
+}
+```
+
+### 2 地図をプロットする
+
+`readOGR`により、SpatialPolygonsDataFrameオブジェクトを作成したら、ひとまず地図がプロットできるようになる。`plot(map)`のように、`plot`関数にオブジェクト名を指定するだけで地図が描画される。`ggplot`によるプロットは次のようにすれば実行されるが、これはポリゴンとして描画しているため解像度が荒い。
+
+```{r, eval=TRUE}
+# ggplot2::ggplot による描画: よくない例。荒い。data.frame, SpatialPolygonsDataFrameどちらでもおk
+ggplot() +  geom_polygon(data = map, 
+                         aes(x = long, y = lat, group = id))
+```
+
+**`{ggplot2}`**を使って描画させる場合は、SpatialPolygonsDataFrameをdata.frameに変換する必要がある。その際、**`{broom}`**
+の`tidy`を利用すると便利である（これまでは`ggplot2::fortify`が使われてきたが、**`fortify` は将来廃止予定とのことであり、 代わりに{broom}パッケージを使うことをHadleyは推奨している**）。
+
+```{r, eval = TRUE}
+broom::tidy(map) %>% {
+  map <<- .
+  print(class(.))
+  dplyr::glimpse(.)
+}
+```
+
+`tidy`処理を施したオブジェクトは共通の列名を持つデータフレームとなる。このオブジェクトを用いてggplotの上に地図をプロットしていく。
+
+```{r, eval = FALSE}
+ggplot() + 
+  geom_map(data = map, 
+           map = map,
+           aes(x = long, y = lat, map_id = id), 
+           fill = "white", color = "black")
+```
+
+`ggplot`の*data*引数及び`geom_map`の*map*に与えるデータフレームはtidy処理を施したオブジェクトである。審美的属性に与える要素も共通である。これが基本型となるが、これだと地図が塗りつぶしされていたり、プロットが正方形になっていたりと、地図として格好が悪いので、次のように幾つかの属性を付加しておくと良い。
+
+```{r, gg_map_basic, eval=TRUE}
+ggplot() +
+  geom_map(data = map, 
+           map = map,
+           aes(x = long, y = lat, map_id = id),
+           color = "black", fill = "white", # 境界線を黒く、領域を白で塗りつぶす
+           size = 0.5) +　
+  coord_map(projection = "mercator") -> plot_map # 投影法を指定（メルカトル図法）
+# ggthemes::theme_map() も地図描画用のggplotテーマなので、指定しておくと良いかもしれない。
+# 背景が白くなり、軸などが表示されなくなる
+
+plot_map
+```
+
+`plot_map`として、再帰的に地図を描画できるようにした。ここから必要なデータを重ねたりしていく。
+
+### 3 マッピング
+
+いよいよ本番。自分のデータを地図上に追加していく。まず、データを用意するところから始め、マッピングを進めていく。地図上にデータを重ねていくマッピングの手法として、ラベルの出力、ポイントの表示、値や水準による塗り分けがあると考えられるので、それぞれについて日本の地図を例を元にして説明する。
+
+#### データの用意
+
+マッピングを行う際に必要になるのは、どの座標（緯度と経度）にどのような値（文字や種類）を出力するか、塗り分けの基準となる値や水準といったものなので、これらを含んだデータフレームを用意しておく。
+
+```{r, eval = TRUE}
+df_jp <- data.frame(address          = c("Tokyo, Japan", 
+                                         "Okayama, Japan", 
+                                         "Sapporo, Japan",
+                                         "Okinawa, Japan"),
+                    id               = c(56, 90, 26, 125),
+                    population       = c(8945695, 709584, 1913545, 315954),
+                    # https://ja.wikipedia.org/wiki/都道府県庁所在地と政令指定都市の人口順位 から人口を入力
+                    stringsAsFactors = FALSE) %>% 
+  mutate_geocode(address) %>% # addressを元に、緯度経度を求める
+  dplyr::mutate(address = gsub(pattern = "[[:punct:]] Japan$", replacement = "", address))
+
+dplyr::tbl_df(df_jp)
+```
+
+#### ラベル及びポイントの表示
+
+緯度・経度、出力する文字列はそれぞれ、`df_jp$lat`, `df_jp$lon`, df_jp$address`である。また、ポイントの大きさを人口 `df_jp$population`を元にして表示してみる。
+
+```{r, eval=TRUE}
+plot_map + 
+  # ポイントの出力
+  geom_point(data = df_jp, 
+             aes(x = lon, y = lat),
+             fill = "skyblue",
+             shape = 21, alpha = 0.8, size = 2 * log(df_jp$population) / 10) + 
+  geom_text(data = df_jp, 
+            aes(label = address, x = lon + 0.2, y = lat + -0.4), 
+            size = 3, 
+            color = "tomato",
+            angle = 20)
+```
+
+### 塗り分け地図（コロプレス図）
+
+塗り分けは少し複雑になる。ベースとしている地図での塗り分けの基準と、データフレームでの基準を一致させていないと、塗り分けされる箇所が変わってしまう。
+
+```{r, eval=TRUE}
+plot_map + 
+  geom_map(data = df_jp, 
+           map = map,
+           aes(fill = population, map_id = id, stat = "identity")) +
+  scale_fill_viridis()
+```
+
+こうした塗り分け地図を描画する専門のパッケージもある。
+
+https://github.com/trulia/choroplethr
+
+## おまけ: 拡大・縮小できる地図
+
+実際に動作しているのはこちらを参考にしてほしい。
+
+[RPubs - Choropleth Map of Japan with svgPanZoom, viridis and lineworkmaps packges.](http://rpubs.com/uri-sy/viridis_choropleth)
+
+```{r, eval=FALSE}
+library(svgPanZoom)
+library(SVGAnnotation)
+```
+
+```{r, eval=FALSE}
+svgPanZoom((plot_map), 
+           controlIconsEnabled = TRUE)
+```
+
+**次回は応用編とさまざまな地図描画手法の紹介です**
+
+## 参考
+
+* [Rの基本グラフィックス機能またはggplot2を使って地図を描くには - verum ipsum factum](http://sudillap.hatenablog.com/entry/2013/03/26/210202)
+* [[R] Rで学ぶ都知事選のデータ可視化【地理データ編】 - ill-identified diary](http://ill-identified.hatenablog.com/entry/2014/02/27/211021)
+* [choroplethrで大阪市のコロプレス図を描く - Technically, technophobic.](http://notchained.hatenablog.com/entry/2015/05/23/201451)
+* [plotting polygon shapefiles · hadley/ggplot2 Wiki](https://github.com/hadley/ggplot2/wiki/plotting-polygon-shapefiles)
+* [Overcoming D3 Cartographic Envy With R + ggplot | rud.is](http://rud.is/b/2014/09/26/overcoming-d3-cartographic-envy-with-r-ggplot/)
+* [Charting/Mapping the Scottish Vote with R (an rvest/dplyr/tidyr/TopoJSON/ggplot tutorial) | rud.is](https://rud.is/b/2014/09/20/chartingmapping-the-scottish-vote-with-r-rvestdplyrtidyrtopojsonggplot/)
+* [Mapping in R using the ggplot2 package | Technical Tidbits From Spatial Analysis & Data Science](http://zevross.com/blog/2014/07/16/mapping-in-r-using-the-ggplot2-package/)
+* [Mapping](http://lincolnmullen.com/projects/dh-r/mapping.html)
+* [RPubs - TopoJSON map of Japan](http://rpubs.com/uri-sy/japan_geojson_map)
+

@@ -1,0 +1,217 @@
+---
+title: "表形式ファイルの読み込み関数あれこれ: readrパッケージの導入を兼ねて"
+author: "Shinya Uryu"
+date: "2015年10月6日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+Rでのいわゆる表形式ファイル読み込みに関して、恥ずかしながら知らない部分や、今後標準になっていくであろう**`{readr}`**パッケージの利用方法について整理しておきたかったのでメモ。
+
+## 組み込み関数
+
+伝統的なRのファイル読み込み関数では、`read.hoge`のような形（read + ドット + 対象）を取っているため、探してみる。
+
+```{r}
+apropos("^read[.][[:alnum:]]")
+```
+
+整理すると、
+
+| 関数名 | 対象とする拡張子、ファイル |
+|--------|----------------------------|
+| `read.csv` | `.csv` |
+| `read.csv2` | `.csv` |
+| `read.dcf` | Debian Control File  |
+| `read.delim` | `.csv`, `.txt`, `.log` etc. |
+| `read.DIF` | `.dif`|
+| `read.fortran` | Fixed-Format Data |
+| `read.ftable` | Flat Contingency Tables |
+| `read.fwf` | Fixed Width Format Files |
+| `read.socket` | --- |
+| `read.table` | `.txt`|
+
+用途不明なものも幾つかあるが、きっとどこかで使うことがあるだろう。特に使用頻度の高いものは表形式のデータファイルを読み込む`read.csv`と`read.table`だ。個人的な話だが、`read.csv`は実際には、`read.table`の引数によって同等の機能を果たすため、最近では`read.table`に絞って使っていたりする。なお、このことは「R for Everyone （Jared Lander 2014, 翻訳: みんなのR（高柳他訳 2015））」にも書いてあり、その情報だけでも「みんなのR」は一読の価値がある。
+
+どういうことかというというと、`.csv`も`.txt`も表形式のデータであれば、区切り文字が異なる、というだけの話なので、適切な区切り文字を*sep*引数に与えればきちんと処理してくれる、という話である。区切り文字としては通常、`.csv`であれば,\*（カンマとスペース）、`.txt`であればタブ（\\tで表記する）になっている。
+
+`read.csv`と`read.csv2`の違いについては@hoxo_mさんがすでに書かれている。
+
+[R の read.csv() と read.csv2() の違い #rstatsj - Qiita](http://qiita.com/hoxo_m/items/959d141cf7297e2e80d3)
+
+## {readr}パッケージ
+
+**{readr}**はその名の通り、さまざまな種類の表形式データに対応した読み込み関数が用意されており、上記のR標準の読み込み関数よりも、読み込みの速度が10倍速い（Hadley談）、という新進気鋭のパッケージである。[Hadleyの記事](https://rpubs.com/hadley/readr)や[奥村さんのページ](http://oku.edu.mie-u.ac.jp/~okumura/stat/readr.html)を参考に書いた。
+
+なお、ここで使用している**{readr}**のバージョンは`r packageVersion("readr")`であり、[GitHubにあるバージョン](https://github.com/hadley/readr)と等しい。
+
+```{r}
+# パッケージのインストールと読み込み
+# install.packages("readr")
+  # CRANからインストール
+# devtools::install_github("hadley/readr/readr")
+  # GitHubからインストール
+library(readr)
+```
+
+**{readr}**では主に**４つの重要な引数**を指定して操作することになる。
+
+#### file
+
+**{readr}**の読み込み用の関数では*file*引数によって対象を指定するが、、ここではローカルにあるファイルだけでなく、圧縮ファイルやインターネット上のファイルも読み込みの対象にすることができる。さらに、**データをそのまま文字列として扱うことも可能である**。
+
+この場合、何気なく使っているテキストファイルの振る舞いというか、仕様を知っておくと便利である。すなわち、`read_`関数に与える文字列として、データの値のほか、タブ区切りや改行を意味する記号の意味である。
+
+```{r}
+read_csv("x,y\n1,2\n3,4")
+```
+
+`\n`は改行を意味する。今回の場合、カンマ区切りのデータとして`read_csv`を利用したため、区切り文字は`,`となっている。これをタブ区切りで表現すると次のようになる。タブ区切りは`\t`で表現されるため次のようになる。
+
+```{r}
+read_tsv("x\ty\n1\t2\n3\t4")
+```
+
+また、任意の区切り文字を使用している場合には、`read_delim`の*delim*で区切り文字を指定することで対処できる。
+
+```{r}
+read_delim("x y\n1 2\n3 4", delim = " ")
+read_delim("x, y\n1, 2\n3, 4", delim = ", ") # read_csvと同じ
+read_delim("x.y\n1.2\n3.4", delim = ".")
+```
+
+#### col_names
+
+*header*引数の役割を果たす引数。初期値として*TRUE*が指定されており、先頭行がデータの列名として扱われる。先頭行がデータの値である場合、*FALSE*を指定する。あるいは次のように列名を文字列として与える。
+
+```{r}
+read_tsv("1\t2\n3\t4", col_names = FALSE)
+  # col_names = FALSE にした場合、列名は自動的に与えられる
+read_tsv("1\t2\n3\t4", col_names = c("列１", "列２"))
+```
+
+#### col_types
+
+列の型を指定する*colClasses*引数と同等の機能を備えるとともに、より柔軟な指定を可能にする。必須ではなく、何も指定しない場合には自動的に判断された型が与えられる（先頭の100行分のデータから推測される）。<a href = "#列の型-col_types引数の活用">詳細は後述する</a>。
+
+#### progress
+
+読み込みに５秒以上の時間がかかりそうなファイルに対して、読み込みの過程を表示するオプション。大規模なファイルを読み込む場合には、プログレスバーがあると精神上良い。
+
+#### locale
+
+RPubsの記事の中でHadleyは強調していないが、日本人の利用者にとっては大事だと思う。
+
+以前ブログで{readr}では文字化け対策ができない、云々[書いた](http://uribo.hatenablog.com/entry/2015/08/23/004222)が、きちんと用意されていた（ @yutannihilation さんのブログ記事でも、対応している文字コードについては[UTF-8のみと書かれている](http://notchained.hatenablog.com/entry/2015/03/22/150827)し、最近対応したのかも ）。`read.table`でいうところの*fileEncoding*は*locale*引数を使って指定する。忌まわしきcp932を扱う場合には
+
+```{r, eval = FALSE}
+read_csv(locale = locale(encoding = "cp932"))
+```
+
+のように、`locale`関数を利用して指定を行う。ロケールに関しても<a href = "#ロケール">後述</a>。
+
+### おまけ
+
+#### 列の型: col_types引数の活用
+
+列がどのようなデータなのかを正確に定義しておくことは、のちの解析でエラーを発生させないために重要であり、分析者間（自分だけの場合でも、未来の自分が理解するために重要）でデータに対する理解を統一させておくためにも大事である。そのため、データをRに読み込む段階で各列のデータがどのような型をしているかを識別し、適当な型を指定しておくと良い。
+
+```{r}
+# iris データの先頭行の幾つかを用意する
+"Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+5.1 3.5 1.4 0.2 setosa
+4.9 3.0 1.4 0.2 setosa
+4.7 3.2 1.3 0.2 setosa
+4.6 3.1 1.5 0.2 setosa
+5.0 3.6 1.4 0.2 setosa
+5.4 3.9 1.7 0.4 setosa" %>% 
+  read_delim(delim = " ") %>% 
+  {
+    print(.) # 読み込んだデータの表示
+    class(.) # クラスの確認
+  }
+```
+
+これまでの例でも見てきたように、**{readr}**の関数で読み込まれたデータを表示すると列名の下に列の型が表示されている。これはdplyrで表示されるものと同じであり、読み込んだオブジェクトがtbl_dfオブジェクトであることを意味している。上の例では、種名をSpecies列以外の列は実数として扱われていることがわかる（Species列は文字列型）。
+
+こうした心遣いには[Hadleyverse](http://adolfoalvarez.cl/the-hitchhikers-guide-to-the-hadleyverse/)を感じる。
+
+任意の列の型を与えるには`col_types`引数で指定する。`col_types`にはlistオブジェクトあるいは**`cols`で与えたcol_specオブジェクト**を定義する。[vignettes](https://github.com/hadley/readr/blob/master/vignettes/column-types.Rmd)をみるとlistではなくcolsが用いられているので、Hadley的にはこっちが推奨なのかもしれない。
+
+```{r}
+# x列は整数型として評価し、y列を文字型に指定
+read_csv("x,y\n1,2\n3,4",
+          col_types = cols(x = col_integer(),
+                           y = col_character())) %$%
+  {
+    print(class(x))
+    print(class(y))
+  }
+
+# 関数名の略称を与えても良い
+read_csv("x,y\n1,2\n3,4",
+         col_types = cols(x = "i",
+                          y = "c"))
+```
+
+指定できる型には次のようなものがある。
+
+| 型 | 関数 | 省略時の表記 |
+|----|------|--------------|
+| 論理型（TやF, TRUE, FALSEにのみ適用） | `col_logical()` | l |
+| 整数型 | `col_integer()` | i |
+| 実数型 | `col_double()` | d |
+| 文字列型 | `col_character()` | c |
+| 日付型（Y-m-d表記） | `col_date()` | D |
+| 時間型（[ISO8601](https://ja.wikipedia.org/wiki/ISO_8601） | `col_datetime()` | T |
+| ? | `col_number()` | n |
+
+実数型と日付型は小文字と大文字とで区別されるので混同しないように注意が必要であるが、同じく時間を表す時間型の表記が大文字のTであるので、時間に関する型は大文字であると認識しておくと良いだろう。
+
+データ内で不要な列を含む場合、読み込みの段階で列を読み込まないように指定することもできる。`col_skip`はそのための関数であり、省略表記は`_`である。
+
+```{r}
+read_csv("x,y,z\n1,2,a\n3,4,b",
+         col_types = cols(x = "i",
+                          y = "c",
+                          z = "_"))
+```
+
+##### 日付型と時刻型
+
+日付型と時刻型に関しては、引数*format*を指定して柔軟な表現に対応できる。
+
+```{r}
+read_csv("date,time\n2015-10-06,20151006T065346+0900",
+         col_types = cols(date = "D",
+                          time = "T"))
+
+read_csv("date,time\n01/02/2010,2015年10月7日 21時00分",
+         col_types = cols(date = col_date(format = "%d/%m/%Y"),
+                          time = col_datetime(format = "%Y年%m月%d日 %H時%M分")))
+```
+
+#### ロケール
+
+**{readr}**は様々なロケールに対応した表記を扱うことができる。その際`locale`関数によって指定する。
+
+```{r}
+locale(date_names = "ja", tz = "Asia/Tokyo")
+parse_date("2001年 12月 31日", "%Y年 %m月 %d日", locale = locale("ja"))
+```
+
+いくつかの組み合わせからなる省略表記が用意されている
+
+```{r}
+parse_datetime("2015-10-06", "%F") # %F は %Y-%m-%d を意味する
+```
+
+
+ドットではなくアンダースコアを使おうな！ Enjoy!
+
+## 参考
+
+* [RPubs - readr-0.1.0](https://rpubs.com/hadley/readr)
+* [readr，haven，readxl](http://oku.edu.mie-u.ac.jp/~okumura/stat/readr.html)
+* [readr 0.0.0.9000を使ってみる - Technically, technophobic.](http://notchained.hatenablog.com/entry/2015/03/22/150827)

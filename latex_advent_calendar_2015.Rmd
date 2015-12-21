@@ -1,0 +1,202 @@
+---
+title: "RユーザーがLaTeXユーザーと仲良くするべき理由"
+author: "Shinya Uryu"
+date: "2015年12月22日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+```{r, include = FALSE, cache = FALSE}
+opts_chunk$set(eval = FALSE)
+```
+
+[TeX ＆ LaTeX Advent Calendar 2015](http://www.adventar.org/calendars/929) の22日目の記事です。昨日は @termoshttさんの「[今さら人に聞けない、Beamerの基本](http://qiita.com/termoshtt/items/cdb716ca4051bbd2d259)
+」でした。
+
+これまでの担当の方々に比べるとLaTeX力が圧倒的に少ないのですが、今日は、主に統計解析のために利用される**R言語でLaTeXが役立っている点についての記事を書くことでLaTeX職人さんたちに感謝の気持ちを伝えたい**と思います（え。また、Rユーザーの方には少しでもRとLaTeXの相性の良さを伝えられればと思います。LaTeXで脱わーどを目指しましょう。
+
+## RユーザーがLaTeXを使うべき理由
+
+LaTeXユーザーの方には言わずもがなですが、Rを使っている人でLaTeXも使う、という人は案外少ないように感じます。ですが、今回の記事で書くように、RとLaTeXを組み合わせることでより強力な表現ができたりしてあれこれ捗ります（多分）。月並みですが、LaTeXの良さとして以下にあげるものがあると思います。
+
+1. **LaTeXで書かれたドキュメントは綺麗（体裁的な意味を含む）**
+2. **豊富なパッケージでドキュメントを彩れる**
+3. **数式を表現するのに便利**
+
+最近では、RMarkdownファイルを活用して、Rコードや実行結果を含めたドキュメントを作成する方も増えているかと思います。その時にLaTeXを使うと大変便利です、という話を以下にしていきます。
+
+### RMarkdownファイルでのLaTeXを利用したPDF出力を極める
+
+今やRでドキュメントを作成する際には常套手段となっている.Rmdファイルでは、YAML部分でLaTeX形式での出力を指定することで、（環境さえ整っていれば）簡単にRmd -> (TeX) -> PDFというような形式での出力が可能です。
+
+おさらいとして.RmdファイルでPDFを出力する際のYAMLヘッダーの書き方を見てみましょう。
+
+```yaml
+title: "example"
+output: pdf_document
+```
+
+これはYAMLでの連想配列と呼ばれる表記の仕方で、titleがキーとなり、コロンの後に続くexampleが値を意味しています。出力 outputのキーにPDFを指定する、というわけですね。
+
+PDFとして出力する際には、いくつかのオプションが利用可能です。ちょっと書き方が変わりますが、先ほどと同様にYAMLを編集します。
+
+```yaml
+title: "example"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 2
+```
+
+pdf_documentのキーにオプションとなるキーを入れ子に記述します。ここで、`toc`は目次を表示するオプションで、値がtrueなので表示する指定をします。また`toc_depth`は目次の深さを指定するオプションとなっております。今回は２なので`\subsection{}`に与えた見出しまで（markdownでは##に該当）を目次に載せます。
+
+その他、PDF出力で設定可能なオプションは次のものがあります。
+
+| 項目 | 概要 | 値（既定値） |
+|------|------|----|
+| `number_sections` | 見出しに番号をつける | 論理値 (false) |
+| `fig_width` | 出力時の図のサイズ（**幅**） | 実数値 (6) |
+| `fig_height` | 出力時の図のサイズ（**高さ**） | 実数値 (4.5) |
+| `fig_crop` | 図の余白を切り落とす[pdfcrop](https://www.ctan.org/pkg/pdfcrop)を有効にする | 論理値 (true) |
+| `fig_caption` | 図に脚注をつける | 論理値 (false) |
+| `dev` | 出力する図の拡張子 | pdf |
+| `highlight` | Rコードなどのハイライトに用いるテーマ | default[^1] |
+| `latex_engine` | レンダリングに用いるLaTeXエンジン | pdflatex[^2] |
+| `keep_tex` | .texファイルを保存する | 論理値 (false) |
+| `includes` | in_header, before_body, after_bodyそれぞれで挿入するtexファイルを指定 | --- |
+| `template` | レンダリング時に任意のテンプレートを利用する際に指定 | --- [^3] |
+| `pandoc_args` | レンダリング時に実行されるpandocのオプション | --- |
+
+[^1]: このほかにtango, pygments, kate, monochrome, espresso, zenburnとhaddockが指定可能
+[^2]: xelatexやlualatexも指定できる
+[^3]: https://github.com/jgm/pandoc-templates/blob/master/default.latex このファイルがテンプレートになっている
+
+また、pdf_documentのキーとは独立して指定するオプションもあります。これらはLaTeXテンプレートに影響を与えるようなオプションになっています。LaTeXユーザーにはおなじみのオプションですね。
+
+* header-includes
+* fontsize
+* geometry
+* lang
+* documentclass
+* classoption
+* geometry
+* mainfont
+* sansfont
+* monofont
+* mathfont
+* linkcolor
+* urlcolor
+* citecolor
+* bibliography
+* csl
+
+#### 日本語を含んだRMarkdownファイルをPDF出力する
+
+以前に[記事としてまとめていますが](http://qiita.com/uri/items/5cce4431ad0d96b96689)、YAMLを以下のように指定すれば、最低限の日本語PDFが出力されます。
+
+```yaml
+header-includes:
+   - \usepackage{zxjatype}
+   - \setjamainfont{Hiragino Kaku Gothic Pro}  
+output:
+  pdf_document:
+    latex_engine: xelatex
+```
+
+ここでは、日本語を表示させるために[`zxjatype`パッケージ](http://zrbabbler.sp.land.to/zxjatype.html)を利用しています。
+
+#### LaTeXパッケージでRMarkdownを彩る
+
+さて、Rと同様、LaTeXにも豊富なパッケージがあります。これらを利用することであなたのドキュメントはより綺麗に、より簡単に文書を書くことが可能になっていくでしょう。ここでは私が頻繁に利用しているオススメのパッケージを紹介します。
+
+* [`fontspec`](https://github.com/wspr/fontspec)... 簡単に複数の種類のフォントをドキュメント内で表現することができます。
+* [`natbib`](https://www.ctan.org/pkg/natbib)... 参考文献リストを作成する際に便利です。
+* [`coloremoji`](https://github.com/doraTeX/coloremoji)および[`bxcoloremoji`](https://gist.github.com/zr-tex8r/cc552c282a9050d575bc)... 絵文字を出力します。自分が使っているツールで「寿司」を表現したい、という気持ちはLaTeXユーザーもRユーザーも変わりません。
+
+我田引水ですが、以下の記事もご覧ください。
+
+[ついに念願の「knitrで生成したPDF上で絵文字を出力する」ことに成功したぞ - まだ厨二病](http://uribo.hatenablog.com/entry/2015/09/22/143911)
+
+[LaTeX文書中に絵文字的なもの（Font-Awesome）を取り入れる - Qiita](http://qiita.com/uri/items/00afdd95e68d47fd917b)
+
+## RMarkdownでBeamer
+
+Rユーザーの方にBeamerの説明を少しだけします。**Beamerとはスライド資料作成のためのLaTeXクラスファイル**の一種であり、文字のレイアウトなど細かい点を気にせずに、なおかつLaTeXの記法が利用できてしまう大変便利なものです。（ちょっと見た目がシンプルすぎる気もしますが...）
+
+昨日の [@termoshttさんの記事](http://qiita.com/termoshtt/items/cdb716ca4051bbd2d259)がタイムリーでした。興味を持たれた方は是非一読あれ。
+
+RMarkdownをBeamer出力するにはYAMLには
+
+```yaml
+output: beamer_presentation
+```
+
+を追加するだけです。
+
+## 俺々テンプレート
+
+またも手前味噌で恐縮ですが、RMarkdownのテンプレートとして、便利なLaTeXパッケージや設定を導入したパッケージを開発しています。最初は本当に個人用に作成したものでしたが、GitHubで星をつけてくれる人がいて、モチベーションの向上につながっています。
+
+[uribo/lab.note](https://github.com/uribo/lab.note)
+
+このようなドキュメントがLaTeXの力を借りて作成できるようになります（ここから拡張していくこともできます）。
+
+![](https://github.com/uribo/lab.note/raw/master/inst/assets/img/preview_report.png)
+
+![](https://github.com/uribo/lab.note/raw/master/inst/assets/img/preview_seminar.png)
+
+## プロットに数式を埋め込む際には**`{latex2exp}`**パッケージを使うのが良い
+
+以前[ぞうさん通信で紹介されていた](http://blog.kz-md.net/?p=1266)のですが、いまいち盛り上がりがないような**`{latex2exp}`**パッケージ。便利なパッケージなのでここで紹介したいと思います。
+
+皆さんRのプロット中に数式を埋め込んだり、タイトルや軸ラベルに対し、太字にしたり字下げを行ったりした経験が一度はあるかと思います。その際にRでは`expression()`や`plotmath()`関数を使って数式を表現することになりますが、なんだか覚えにくくありませんか。特に私のようなLaTeXユーザーだと、慣れているTeXの表現と異なるので面倒臭さが倍増します。
+
+[**`{latex2exp}`**](https://github.com/stefano-meschiari/latex2exp)パッケージではそんな煩わしさを取っ払って、LaTeX記法を利用して図の中に数式を埋め込んだりできます。
+
+```{r, eval = TRUE}
+# install.packages("latex2exp")
+library(latex2exp)
+```
+
+### 簡単な使い方
+
+LaTeXではコマンドの入力時にはバックスラッシュを使うのがお約束になっていますが**`{latex2exp}`**パッケージでは、そのお約束に加え、更にバックスラッシュを必要とします。すなわち、２重バックスラッシュで数式を定義する必要があります。また数式のインライン表示を行う際の\$で囲うという規則も**`{latex2exp}`**で有効です。すなわち、
+
+\alpha を表現する場合には`TeX("$\\alpha$")`とします。
+
+```{r}
+TeX("$\\alpha$")
+```
+
+`TeX()`関数に渡す値がLaTeX記法で表現したい数式になります。`TeX()`を軸のラベルや図中に埋め込むことで簡単に数式を表現できます。また数式部分だけをプロットすれば、`LaTeXiT.app`のように数式の図が作れます。
+
+```{r, eval = FALSE, echo = TRUE}
+curve(dnorm, from = -3, to = 3, main = "Normal Distribution")
+text(x = 0, y = 0.1,
+     TeX("$\\y = \\frac{1}{\\sqrt{2 \\pi}} \\e ^{-\\frac{x^2}{2}$"))
+# text(x = 0, y = 0.1, 
+#      expression(italic(y == frac(1, sqrt(2 * pi)) * e ^ {-frac(x^2, 2)})))
+```
+
+```{r, eval = FALSE, echo = TRUE}
+plot(TeX("I $\\heartsuit \\LaTeX$ and R"), 
+     cex = 2, col = "magenta1")
+```
+
+## RStudioでtexファイルを編集する
+
+そんなことも可能です。シンタックスハイライトも有効です。コンパイルまでできます。
+
+というわけで、Rを使うならLaTeXも覚えようね、という記事でした。
+
+いつもわかりやすいLaTeXの記事を書いてくれる方や素敵なパッケージを開発してくださる皆さんに感謝です。明日の担当は @doraTeX
+ さんです。楽しみですね。
+ 
+個人的なところでは、来年はもっとTeX力を高めたいです...。
+
+## 参考
+
+* 高橋康介 (2014). ドキュメント・プレゼンテーション生成. 共立出版.
+* [PDF Documents](http://rmarkdown.rstudio.com/pdf_document_format.html)
+* [YAML フォーマット - Symfony](http://symfony.com/legacy/doc/reference/1_4/ja/02-YAML)

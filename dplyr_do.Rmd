@@ -1,0 +1,206 @@
+---
+title: "dplyrでdoして楽をする"
+author: "Shinya Uryu"
+date: "2015年11月11日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+
+熱狂的なHadley Wickhamファンな私ですが、最近、Hadleyのあゆみについていけていない感があります。
+
+**`{purrr}`**だの、**`{multidplyr}`**だの次々と新しいパッケージが登場したり、やっとの事で1.0.0メジャーバージョンになった **`{ggplot2}`**の次期マイナーバージョンである1.1.0の開発がGitHubで始まったりと、ちょっと待ってくれよ、と戸惑いを感じる今日この頃です。というわけで新しい（わけでもないけど）関数の使い方を覚えようという心構えです。
+
+今日はみんな大好き **`{dplyr}`**から、便利な`do()`関数の使い方を紹介します。`do()`関数は、はじめは意味がわからなすぎて辛いですが、**`{ggplot2}`**のように使い方がわかれば大変便利な関数です。
+
+まずは必要なパッケージを読み込みます。**`{dplyr}`**が今回の主ですが、後半に**`{broom}`**、**`{ggplot2}`**を利用した応用例を紹介します。**`{knitr}`**は記事を書くために利用しているパッケージなので、特に必要ではありません。
+
+私が使用している**`{dplyr}`**のバージョンは`r packageVersion("dplyr")`ですが、`do()`関数はCRANに上がっている0.4.3でもあります（0.2くらいから？）。
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+library(broom)
+library(ggplot2)
+# library(knitr)
+```
+
+`do()`関数の機能をざっくり説明すると、**データフレームに対して任意の関数を適用する**というものです。特にいくつかのグループがあるようなデータに対して強力な機能を持っています。
+
+何はともあれ関数の働きを見てみましょう。
+
+## do()の基本動作
+
+```{r}
+iris %>% do(head(., 2)) # head(iris, 2) と同じ働き
+iris %>% group_by(Species) %>% do(head(., 2))
+  # Speciesごとにグループ化されているので、Speciesの各水準に対してhead()を実行する
+```
+
+`do()`関数を使いこなすには、グループ化の概念と`do()`関数で処理した後の値の扱いについて承知していることが重要です。先の例では、irisデータセットの３つの水準（品種名）を持つSpecies変数を`group_by()`関数によりグループ化し、水準ごとに`do()`関数ないで記述した`head()`関数を動作させたということになります。
+
+```{r}
+levels(iris$Species)
+  # irisのSpeciesは３つの水準を持つ
+```
+
+最初の例ではグループ化せずにirisオブジェクトをそのまま`do(head())`に渡したため、グループ化はされずに単に`head(iris)`とした時と同じ結果が返ってきました。また次の例のように一度グループ化しても`ungroup()`関数でグループを解除した場合も`head(iris)`と同じ値を返します。
+
+```{r}
+iris %>% group_by(Species) %>% ungroup() %>% do(head(., 2))
+  # ungroup()しておくと、グループ化が解除され、head(iris, 2)と同じになる
+```
+
+### 水準ごとの処理に便利
+
+もう少し詳しく見ていきましょう。水準ごとに同じ関数を実行するという、次のような例はみなさんやったことがあるかと思います。
+
+```{r, eval=FALSE}
+iris %$% lm(Petal.Length ~ Sepal.Length, data = ., subset = Species == .$Species[1])
+iris %$% lm(Petal.Length ~ Sepal.Length, data = ., subset = Species == .$Species[2])
+iris %$% lm(Petal.Length ~ Sepal.Length, data = ., subset = Species == .$Species[3])
+```
+
+こんな風にするのは面倒臭い。特に要因がたくさんあると辛いです。そんな時doするか...
+
+```{r}
+iris_lm <- iris %>% group_by(Species) %>% 
+  do(
+    lm.res = lm(Petal.Length ~ Sepal.Length,
+                data = .))
+```
+
+`do()`関数の強みはグループごとに関数を処理することでしたので、このようにすると個々に`lm()`関数を実行する場合と比べて楽です。
+
+今の結果はiris_lmというオブジェクトに代入してあります。そのオブジェクトを見てみると
+
+```{r}
+iris_lm
+```
+
+見慣れない形式の値が返ってきました。しかしその実態は
+
+```{r}
+iris_lm %>% {
+  class(.) %>% print()
+  names(.)
+}
+```
+
+行ごとに処理する段階（`rowwise()`状態）にある**ただのデータフレーム**です。データフレーム内ではグループ化の基準となるSpeciesと、Speciesの各水準に対して`lm()`を実行した結果をlm.resという変数で保存しています。
+
+`do()`で処理した帰り値はデータフレームオブジェクトである。このことをしっかりと覚えておきましょう。関数の返り値をデータフレームオブジェクトにするには、`data.frame()`を使うか、**`{dplyr}`**の`summarise()`などのデータフレームオブジェクトとして渡すか、といったことが考えられます。
+
+今回のようにデータフレームオブジェクトに対応しない関数を`do()`に渡すには、別途、変数名を与えてやる必要があります。次は失敗例です。
+
+```{r, eval=FALSE}
+# data.frameにするための変数名を与える必要がある。
+iris_lm <- iris %>% group_by(Species) %>% 
+  do(lm(Petal.Length ~ Sepal.Length, data = .))
+
+Error: Results are not data frames at positions: 1, 2, 3
+```
+
+```{r}
+iris %>% group_by(Species) %>% do(cor(.$Sepal.Length, .$Petal.Length) %>% data.frame())
+ # cor()の返り値をdata.frame()で処理する
+```
+
+また、`do()`の中では複数の関数を実行することができます。
+
+```{r}
+iris %>% group_by(Species) %>% 
+  do(data.frame(Length.max = max(.$Sepal.Length), 
+                Length.min = min(.$Sepal.Length)))
+```
+
+### `do()`関数で処理した後の値の取り出し
+
+`do()`関数で任意の関数を実行した後、それぞれの水準が持つ値をみたいということがあります。話を単純にするためまずはグループ化していない（水準を考慮しない）関数の処理とその値の参照方法を見てみましょう。
+
+```{r}
+iris_lm_all <- iris %>% lm(Petal.Length ~ Sepal.Length, data = .)
+
+iris_lm_all %>% {
+  class(.) %>% print()
+  names(.) %>% print()
+  summary(.) %>% names() %>% print()
+  coef(.) %>% names() %>% print()
+}
+```
+
+上記のような関数を実行して、その変数にアクセスするというのが通常の手段になります。`do()`関数でもそのようにして各水準ごとに求められた値を参照します。
+
+単回帰を行った際の決定係数を参照するには`summary()$r.squared`ですので、水準ごとに求めた決定係数を参照するには、同様に
+
+```{r, eval=FALSE}
+iris_lm %>% summarise(r2 = summary(lm.res)$r.squared)
+```
+
+とします。どの行がどの水準を表しているかがわかった方が良いので、
+
+```{r}
+iris_lm %>% summarise(Species = Species,
+                      r2 = summary(lm.res)$r.squared)
+```
+
+としておくと便利でしょう。
+
+次は単回帰の最小二乗法によって求められたパラメーターを取り出してみたいと思います。
+
+```{r}
+coef(iris_lm_all)
+  # 係数は`coef()`によって求められる
+iris_lm %>% do(
+  data.frame(Species   = .$Species,
+             intercept = coef(.$lm.res)[1],
+             slope     = coef(.$lm.res)[2]))
+```
+
+### グループ化がもたらす副作用に注意
+
+少し脇道にそれますが、一度グループ化したデータフレームオブジェクトのグループは別の関数に値を渡した際も引き継がれます。`group_by()`しておいて、うっかりそのまま集計用の関数を適用したりすると思わぬ結果を導くことがあるので、適宜`ungroup()`関数でグループを解除するのを忘れないようにしましょう。
+
+## {broom}との組み合わせ
+
+これまで見てきたように、`do()`関数は回帰モデルなどの関数と相性が良いので、**`{broom}`**パッケージと組み合わせて使うとさらに便利です。
+
+このあたりのことは**`{broom}`**パッケージのvignettesに詳しい解説がありますので、ここでは紹介するに留めさせていただきます。
+
+```{r, results='asis'}
+iris %>% group_by(Species) %>% 
+  do(cor.test(.$Sepal.Length, .$Petal.Length) %>% tidy()) %>% 
+  kable()
+```
+
+```{r, results = 'asis'}
+iris_lm %>% tidy(lm.res) %>% kable()
+iris_lm %>% augment(lm.res) %>% kable()
+iris_lm %>% glance(lm.res) %>% kable()
+```
+
+## {ggplot2}と組み合わせる
+
+水準ごとに図を描きたい... これも`do()`関数を使えば簡単にできます。海外にも同様の願望を持った人がいました。
+
+http://stackoverflow.com/questions/29034863/apply-a-ggplot-function-per-group-with-dplyr-and-set-title-per-group
+
+このページで挙げられている質問とそれに対する一つの解答例で`do()`関数を使って水準ごとにggplot2の図を描いてみます。
+
+```{r}
+p <- iris %>% ggplot(aes(Sepal.Length, Petal.Length)) + geom_point()
+  # 元となるggplotオブジェクトを作る
+iris_sp_plots <- iris %>% group_by(Species) %>% 
+  do(plots = p %+% . + facet_wrap(~Species))
+  # Speciesの水準ごとに図を描く
+```
+
+出力は次のようにします。
+
+```{r}
+iris_sp_plots$plots[1]
+```
+
+便利ですね。
+
+Enjoy!

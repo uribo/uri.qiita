@@ -1,0 +1,65 @@
+---
+title: "緯度経度の表記を相互的に変換する"
+author: "Shinya Uryu"
+date: "2015年10月6日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+座標に関する表記方法として、大きく分けて次のものがある。
+
+1. **DMS** (**D**egree **M**inute **S**econd, 緯度経度を度分秒（60進数）を使って表す。ex. 153°59′11″, 24°16′59″)
+2. **DEG** (Degree, 緯度経度を10進数の度のみを使って表す。ex. 133.9350, 34.66167)
+
+参考) http://www7a.biglobe.ne.jp/~allegory/dms-deg.html
+
+変換する方法がはっきりしていて、わかりやすいのでさまざまなプログラミング言語で変換の方法が書かれている。
+
+が、Rではどうなのだろう。関数はあるのかしらんと思って調べてみたところ、 **`{celestial}`** パッケージに変換のための関数が用意されていた。それぞれの方法で変換を試みる。
+
+説明のために次のようなデータを用意する。
+
+```{r, message = FALSE, warning = FALSE, results = 'asis'}
+df_jp <- data.frame(address          = c("Tokyo, Japan", 
+                                         "Okayama, Japan", 
+                                         "Sapporo, Japan",
+                                         "Okinawa, Japan"),
+                    stringsAsFactors = FALSE) %>% 
+  ggmap::mutate_geocode(address)
+dplyr::tbl_df(df_jp) %>% kable(format = "markdown")
+```
+
+```{r, message = FALSE}
+library(celestial)
+```
+
+パッケージを読み込んで準備完了。
+
+### DEGからDMS
+
+```{r}
+deg2dms(df_jp$lat, type = "cat", sep = "dms")
+# spe 引数で度分秒の区切り文字を指定する
+deg2hms(df_jp$lon, type = "cat")
+```
+
+変換した値を新たな列として加える。
+
+```{r}
+df_jp %<>% dplyr::mutate(lon_dms = deg2hms(lon, type = "cat"),
+                         lat_dms = deg2dms(lat, type = "cat", sep = "dms"))
+```
+
+### DMSからDEG
+
+先ほど同様、変換した値を新規列とする。
+
+```{r}
+df_jp %<>% dplyr::mutate(lon_deg = hms2deg(lon_dms, sep = ":"),
+                        lat_deg = dms2deg(lat_dms, sep = "dms"))
+```
+
+```{r, results='asis'}
+kable(df_jp, format = "markdown")
+```

@@ -1,0 +1,248 @@
+---
+title: "rexパッケージを使ってRでの正規表現を身につける"
+author: "Shinya Uryu"
+date: "2015年10月6日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+**プログラマでなくても、研究やギョームのためになんらかしらのコードを書く人間にとって、正規表現を覚えることはとても大事**だって、どこかの本、あるいはどこかのブログ or Qiita 記事に書いてあった気がする。
+
+Rで正規表現、なかなか覚えられなくて、いつも[このページ](http://www.okada.jp.org/RWiki/?R%20における正規表現)をみているのだけど、いい加減に覚えたい。正規表現を覚えて、早く人間になりたい。そんな私のために、Rで正規表現を使いやすくしてくれる**`{rex}`**パッケージのメモ。
+
+まず正規表現の基礎として、`grep()`の引数をみてみる。
+
+```{r, eval = FALSE}
+grep(pattern = pattern, x = string)
+```
+
+*pattern*引数に正規表現パターンを記述し、*x*引数に対象の文字列やオブジェクトを渡す。Rでは多くの関数が*pattern*引数に相当する引数を備えており、`grep()`や`sub()`以外でも正規表現パターンが有効である（例えば`list.files()`）。
+
+例として早速、shortcutsで表示された正規表現をみてみたい。`grep()`では、*value*引数でTRUEを指定すれば、一致する箇所だけでなく、値そのものを返してくれるので、正規表現がどのように働くかを確認するためにはTRUEを指定しておくことを勧める。
+
+```{r}
+grep(pattern = "いう", x = c("あいうえお", "abced", "12345"), value = TRUE)
+  # 「いう」を含んだ「あいうえお」とマッチする
+```
+
+*pattern*に渡す値は、マッチさせたい文字列そのものでも良いのだが、もっと効率的にマッチングを行えるように、正規表現では、文字クラスやPOSIX文字クラス、アンカーによる位置や繰り返しの指定などの便利な仕組みを備えている。これらのメタ文字を器用に用いることで、正規表現で表現できるマッチングのパターンが増すので、ぜひとも覚えたい。
+
+... 覚えたいが、よく忘れる。そこで、**`{rex}`**の登場である（ババーン）。
+
+**`{rex}`**を読み込むと、つぎのメッセージが表示される。
+
+```{r}
+library(rex)
+```
+
+`rex_mode()`を実行すると**`{rex}`**に用意されている正規表現のパターンや関数をattachした状態になるので、言われた通りに実行しておくと良い。
+
+```{r}
+rex_mode()
+```
+
+では、**`{rex}`**の主な関数をみていくことにしよう。
+
+## 正規表現パターンの一覧
+
+```{r, eval = TRUE, echo = TRUE, results = 'hide'}
+shortcuts
+```
+
+`shortcuts`とコンソールに打ち込むと、**`{rex}`**によるregexクラスのオブジェクトおよびRで表現可能な正規表現パターンが出力される。これだけでも便利な関数なので、正規表現パターンを忘れた時は`shortcuts`を実行すると良い。
+
+## 正規表現パターンの生成
+
+`rex()`は正規表現パターンをよしなに生成してくれる便利な関数である。
+
+```{r}
+rex("あいう")
+as.regex("あいう")
+```
+
+つぎの正規表現は同じ。
+
+```{r}
+grep("あいう", x = c("あいうえお", "abced", "12345"))
+grep(rex("あいう"), x = c("あいうえお", "abced", "12345"))
+```
+
+`rex()`の引数に渡した文字列は正規表現パターンとみなされ、`grep()`などの*pattern*引数にそのまま利用できる。ここでは文字そのものだけでなく、shortcutsで表示されるregexクラスオブジェクトを用いて様々な正規表現パターンを出力することが可能である。
+
+### 文字クラスとPOSIX文字クラス
+
+対象の文字が決まった文字列で生成されている場合には、文字クラスあるいはPOSIX文字クラスを利用すると良い。
+
+```{r}
+x <- c("alphabet", "123456", "alnum789", "123 456")
+```
+
+```{r}
+grep("[1-9]", x, value = TRUE) # 1から9までの数字を含んだオブジェクトを返す
+grep("[a-z]", x, value = TRUE) # aからzまでのアルファベット文字列を含むオブジェクトを返す
+```
+
+```{r}
+grep("[[:alpha:]]", x, value = TRUE) # アルファベットを含むオブジェクトを返す
+grep("[[:digit:]]", x, value = TRUE) # 数字とマッチするオブジェクトを返す
+grep("[[:space:]]", x, value = TRUE) # 空白文字を含んだオブジェクトとマッチ
+```
+
+これらの表現はregexクラスオブジェクトを用いて
+
+```{r}
+shortcuts[10]
+grep(shortcuts[10], x, value = TRUE)
+grep(alpha, x, value = TRUE)
+grep(rex(capture(alpha)), x, value = TRUE)
+```
+
+のようにしても良い。
+
+### 文字クラスによる制御
+
+**`{rex}`**では、`character_class()`の関数により文字クラスによる正規表現のパターンを作成することもできる。
+
+```{r}
+yama <- c("山田一郎", "山口二郎", "山国三郎", "甲本四郎", "山野吾郎")
+
+rex("山", one_of("田", "口")) # 正規表現の確認
+grep("山[田口]", yama, value = TRUE)
+grep(rex("山", one_of("田", "口")), yama, value = TRUE)
+ # one_of -> 山[田口]... いずれかにマッチ
+
+grep(rex("山", any_of("田", "口")), yama, value = TRUE)
+ # any_of -> 山[田口]*
+ # 要素にマッチしてもしなくても良い
+ # （この場合、「山」とマッチしない「甲本四郎」は返ってこない）
+
+grep(rex("山", some_of("田", "口")), yama, value = TRUE)
+ # some_of -> 山[田口]+... マッチする要素
+
+grep(rex("山", none_of("田", "口")), yama, value = TRUE)
+ # none_of -> 山[^田口]... マッチしない要素を返す
+ # （この場合、「山」を含む「山国三郎」と「山野吾郎」は返ってくるが、いずれにもマッチしない「甲本四郎」は返ってこない
+
+grep(rex("山", except_any_of("田", "口")), yama, value = TRUE)
+ # except_any_of -> 山[^田口]*... 「山」にマッチ、「田」あるいは「口」とはマッチしてもしなくても良い
+
+grep(rex("山", except_some_of("田", "口")), yama, value = TRUE)
+ # except_some_of -> 山[^田口]+... 
+```
+
+#### 日本語文字クラス
+
+Rの標準機能として備わっている正規表現パターンや**`{rex}`**では、日本語の文字クラスを指定する方法がない。そのため、日本語に対して正規表現を行いたい場合には自分で日本語の文字クラスを用意する必要がある。例題として、このような文字オブジェクトを用意する。
+
+参考) [日本語の文字一覧 - Qiita](http://qiita.com/kiseragi/items/a0e07db26351ec2ef67b)
+
+
+```{r}
+player <- c("小川泰弘", "館山昌平", "石川雅規", "オンドルセク", "つばくろう")
+```
+
+```{r}
+grep("[あ-ん]", player, value = TRUE) # ひらがなとマッチ
+grep("[ア-ン]", player, value = TRUE) # カタカナにマッチ
+grep("[亜-腕]", player, value = TRUE)
+```
+
+これは[r-wakalang](https://r-wakalang.slack.com)にて\@yutannihilation が教えてくれたことだが、`chartr`は文字列の変換に便利。例えば、漢数字をアラビア数字に変更（この場合、１桁という条件付きだが）したい時には、次のように任意の漢数字文字クラスを作り、数字文字クラスに置き換える。
+
+```{r}
+kansuji <- c("一", "二、三", "四", "五、六")
+chartr(old = "[零一二三四五六七八九]", new = "[0-9]", kansuji)
+```
+
+### アンカー（位置）による制御
+
+`^`や`$`は、正規表現の位置（先頭・後尾）を指定するアンカーとして機能する。
+
+```{r}
+grep("^小川", player, value = TRUE)
+grep("平$", player, value = TRUE)
+grep(".川+", player, value = TRUE)
+```
+
+### 文字の表現
+
+特定の文字をマッチングさせるために、幾つかの専用のメタ文字が用意されている。
+
+```{r}
+hoges <- c("hoge com", "hoge.com", "hoge_com", "piyo.com")
+```
+
+```{r}
+# ドット（エスケープのためにバックスラッシュを入力） -> \.
+grep("\\.", hoges, value = TRUE)
+grep(shortcuts[1], hoges, value = TRUE)
+```
+
+```{r}
+# なんでも良い。とにかく１文字分 -> .
+grep(".", hoges, value = TRUE)
+grep(shortcuts[2], hoges, value = TRUE)
+```
+
+```{r}
+# 任意の文字と何か -> +
+grep(".+", hoges, value = TRUE)
+grep("hoge+", hoges, value = TRUE) # 組み合わせて使うことが多い
+```
+
+```{r}
+# 数字 -> \d
+grep("\\d", x, value = TRUE)
+grep("^\\d", x, value = TRUE) # 数字で始まる（アンカーとの組み合わせ）
+```
+
+```{r}
+# アルファベットと数字 -> \w
+grep("\\w", x, value = TRUE)
+```
+
+#### 範囲・繰り返し回数の指定
+
+これらは繰り返し回数を指定することで応用の幅が広がる。**`{rex}`**では`counts()`により繰り返しの制御を行う。
+
+```{r}
+# xのn回繰り返し -> {n}
+n_times(x = "\\d", n = 6)
+grep("(?:\\d){6}", x, value = TRUE)
+
+# xのlowからhighまでの繰り返し -> {l, n}
+between("\\d", low = 1, high = 3, type = "greedy")
+grep("(?:\\d){1,3}", x, value = TRUE)
+
+# xを少なくともn回繰り返す -> {n, }
+at_least("\\d", n = 6)
+grep("(?:\\d){6,}", x, value = TRUE)
+
+# -> {, n}
+at_most("\\d", n = 1)
+grep("(?:\\d){,1}", x, value = TRUE)
+```
+
+### 論理表現とワイルドカード
+
+マッチングしないものを返したい時や、複数条件にマッチさせたい場合には論理表現を使って正規表現を記述する。
+
+```{r}
+"山田" %or% "山口"
+grep("(?:山田|山口)", yama, value = TRUE)
+grep(or("山田", "山口"), yama, value = TRUE)
+```
+
+```{r}
+one_or_more(non_alphas)
+grep(one_or_more(non_alphas), x, value = TRUE)
+
+grepl(rex("あい" %if_next_is% "うえお"), "あいうえお", perl = TRUE)
+grepl(rex("eo" %if_prev_is% "aiu"), "aiueo", perl = TRUE)
+grepl(rex(range("a", "e") %if_next_isnt% range("f", "g")), "ah", perl = TRUE)
+```
+
+### 最後に
+
+正規表現、忘れるのはもう仕方がない。正規表現と戦う機会を増やして、体に覚えさせていくしかない。適宜、新しい情報があれば更新する。

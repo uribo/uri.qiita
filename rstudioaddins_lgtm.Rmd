@@ -1,0 +1,101 @@
+---
+title: "RStudioで気軽にLGTM"
+author: "Shinya Uryu"
+date: "2015年12月19日"
+output: 
+  md_document:
+    variant: markdown_github
+---
+
+```{r, include = FALSE, cache = FALSE}
+opts_chunk$set(eval = FALSE)
+```
+
+みんな大好きRStudioの新しいPreview版 (v0.99.825) が[リリースされました](https://www.rstudio.com/products/rstudio/download/preview/)。いくつか新しい機能がありますが、中でも注目したいのは"**RStudio Addins**"です。
+
+プロセスとしての一連の処理を実行することが実行できたり、インタラクティブにRオブジェクトの操作ができたりと、これまでにない新しい機能で楽しむことができそうです。詳しいことはRStudioの[公式ページ](http://rstudio.github.io/rstudioaddins/)を見てもらうとして、今回はタイトルの通り、**RStudioでLGTM画像を出力する**、という話になります。
+
+### 動作例
+
+何はともあれこちらをご覧ください。
+
+![eNu7cjUZRe.gif](https://qiita-image-store.s3.amazonaws.com/0/19462/cc4d497b-daa4-6d42-f256-5653d97314fe.gif)
+
+楽しいですね。
+
+今回はShiny Gadgets として作成しました。RStudio Addinsを配布させるためにはパッケージとしてまとめることが必要ですが、単純に呼び出すだけなら次のコードをコピペして**通常の関数の実行で済みます**。LGTMしたくなった際にはぜひお試しください。
+
+### Rコード
+
+```{r}
+# 必要なパッケージを読み込む
+library(shiny)
+library(shinygadgets)
+library(rstudioaddins)
+```
+
+```{r}
+# 関数を定義する
+rlgtm <- function(user = NULL, height = 400) {
+  # 画像用に一時ファイルを作成
+  tmpf <- tempfile()
+  
+  # LGTM画像のURLを取得
+  #   ユーザー名を指定した場合、ユーザーのお気に入りからランダムにLGTM画像を表示
+  image_url <- ifelse(is.null(user), "http://lgtm.in/g", paste("http://lgtm.in/g", user, sep = "/")) %>% 
+    xml2::read_html() %>% 
+    rvest::html_nodes(css = "form input") %>% 
+    extract(1) %>%
+    rvest::html_attr("value")
+  image_ext <- tools::file_ext(image_url)
+  
+  # URLからファイルをダウンロード
+  download.file(url      = image_url,
+                destfile = paste(tmpf, image_ext, sep = "."),
+                quiet    = TRUE)
+  
+  # 画像サイズを変更
+  image <- paste(tmpf, image_ext, sep = ".") %>% 
+    webshot::resize(paste0("x", height))
+  
+  # Shiny の部分
+  ui <- imageOutput("image")
+  server <- function(input, output, session) {
+    output$image <- renderImage({
+      list(src = image, height = height)
+    })
+  }
+  # Viewerの起動。paneViewer()関数で出力時のviewerのサイズ（最低の高さ）を指定
+  runGadget(ui, server, viewer = paneViewer(height))
+}
+```
+
+```{r}
+# 関数の実行
+rlgtm()
+
+# ユーザー名を指定して実行
+rlgtm(user = "uribo")
+```
+
+### 仕組み
+
+簡単です。
+
+1. LGTM画像を http://lgtm.in から取得する。出力するLGTM画像は[ランダムに一枚表示してくれるページ](http://lgtm.in/g)から選ぶようにする。
+    * *user*引数により、GitHubのアカウントでお気に入りを登録している場合、そのユーザーのお気に入りから画像を表示する。
+2. `webshot::resize()`により画像のサイズ（高さ）を変更。初期値として400pxに設定。
+    * この高さがviewerの高さ（`paneViewer()`での*minHeight*引数になるので、viewerを小さくしていても拡大されるようになる。
+
+![スクリーンショット 2015-12-19 17.00.42.png](https://qiita-image-store.s3.amazonaws.com/0/19462/8f136156-5476-d88c-77f5-a4a21ae46681.png)
+
+LGTM!
+
+
+
+
+
+
+
+
+
