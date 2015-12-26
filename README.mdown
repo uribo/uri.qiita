@@ -31,6 +31,17 @@ Written articles were [here](http://qiita.com/uri).
 0. [R - 学会発表のためのggplot2の設定めも](http://qiita.com/uri/items/615653e83642d7e475de) 150608
 0. [【gifアニメつき】テキストエディタとしてのRStudioを極めたい - Qiita](http://qiita.com/uri/items/a4a6e9abdbe9a913d657) 150723
 0. [殺伐としたSlackのチャンネルにRの出力が！を実現する - Qiita](http://qiita.com/uri/items/acd9f1538098a407f865) 150730
+0. [【word】docxtractrパッケージで.docx内の表からデータを抽出する【これはすごい】 - Qiita](http://qiita.com/uri/items/98b20d928a9d8c0645d2) 
+0. [RStudioではじめるGitによるバージョン管理 - Qiita](http://qiita.com/uri/items/6b94609f156173ed43ed) 150906
+0. [R - 【まとめ用】ggplot2を使って地図を書く - Qiita](http://qiita.com/uri/items/5e696b7e36ecfd4745bc) 151009
+0. [表形式ファイルの読み込み関数あれこれ: readrパッケージの導入を兼ねて - Qiita](http://qiita.com/uri/items/9fdc5d831ff69a2d9128) 151018
+0. [R - 緯度経度の表記を相互的に変換する - Qiita](http://qiita.com/uri/items/782753eb9113d908b2dc) 151012
+0. [rexパッケージを使ってRでの正規表現を身につける - Qiita](http://qiita.com/uri/items/1aedc5030acc5d3691c2) 151027
+0. [dplyrでdoして楽をする - Qiita](http://qiita.com/uri/items/27f1497778b4385acb25) 151112
+0. [Slack - r-wakalang へようこそ - Qiita](http://qiita.com/uri/items/5583e91bb5301ed5a4ba) 151206
+0. [RMarkdownでの出力結果をアウトプットの種類に応じて変更させる - Qiita](http://qiita.com/uri/items/cb36650f6864ed11a7ea) 151212
+0. [RStudioで気軽にLGTM - Qiita](http://qiita.com/uri/items/dc3937e9efdeed1ea661) 151219
+0. [RユーザーがLaTeXユーザーと仲良くするべき理由 - Qiita](http://qiita.com/uri/items/02883ef0f3e2962eac52) 151222
 
 ### 2014
 
